@@ -14,4 +14,27 @@ RAG 驱动的编程查漏补缺与个性化复习助手。
 
 ## 当前进度
 
-项目准备阶段，尚未实现业务功能。
+项目准备阶段，尚未实现业务功能。## 本地编译与运行
+
+当前已验证环境：Windows、MSVC x64、CMake。
+
+在已加载 MSVC x64 开发环境的终端中，
+进入包含 CMakeLists.txt 的项目根目录，再执行：
+
+```cmd
+cmake -S . -B D:/mashang-build -G "NMake Makefiles"
+cmake --build D:/mashang-build
+D:\mashang-build\hello.exe
+```
+
+成功输出：
+
+```text
+Mashangzhixin: C++ is ready!
+```
+
+说明：
+- 当前仅验证了 C++ 测试程序，尚未实现网页后端和 AI 功能。
+- 本机使用 D:/mashang-build 保存构建产物，
+  避开此前构建过程中出现的中文路径编码问题。
+- 队友应根据自己的电脑选择可写的纯英文构建目录。
