@@ -1,0 +1,21 @@
+# 编译生成的文件
+build/
+*.obj
+*.exe
+*.pdb
+*.ilk
+
+# 当前电脑专用的编辑器配置
+.vscode/
+
+# 密钥和本地环境配置
+.env
+.env.*
+!.env.example
+
+# 本地课程资料
+materials/
+
+# 前端依赖与构建结果
+node_modules/
+dist/
