@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#04101f">
+<meta name="description" content="码上知新 · 课程答疑 — 选择课程，输入问题，向老师发起提问，温故知新。">
+<title>码上知新 · 课程答疑</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2304101f'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%2379dce8'/%3E%3Ccircle cx='32' cy='32' r='13' fill='none' stroke='%2379dce8' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%2379dce8' stroke-opacity='.5' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sky" aria-hidden="true"></div>
+
+<header class="navbar">
+  <a class="logo" href="#">码上<i>知新</i></a>
+  <span class="tag">课程答疑 · 温故知新</span>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <p class="eyebrow">MA SHANG ZHI XIN · Q&amp;A</p>
+    <h1 class="title">码上知新</h1>
+    <p class="lede">选择课程，输入你的问题，向老师发起提问。<br>当前为演示版本，回答与资料出处使用模拟数据。</p>
+  </section>
+
+  <section class="panel">
+    <!-- 课程选择框 -->
+    <div class="field">
+      <label class="field-label" for="course">课程选择</label>
+      <select id="course" class="select">
+        <option value="c-language" selected>C 语言</option>
+        <option value="data-structure">数据结构</option>
+        <option value="algorithm">算法设计</option>
+        <option value="python">Python</option>
+        <option value="java">Java</option>
+      </select>
+    </div>
+
+    <!-- 问题输入框 -->
+    <div class="field">
+      <label class="field-label" for="question">你的问题</label>
+      <textarea id="question" class="textarea" rows="4" placeholder="例如：What is a pointer?"></textarea>
+    </div>
+
+    <!-- 提交问题按钮 -->
+    <div class="field">
+      <button id="askBtn" class="btn-primary" type="button">提交问题</button>
+    </div>
+
+    <!-- 回答区域 -->
+    <section id="answerPanel" class="answer hidden">
+      <div class="answer-head">
+        <h2 class="section-title">回答</h2>
+        <span class="badge" id="courseBadge">C 语言</span>
+      </div>
+      <div id="answerBody" class="answer-body"></div>
+    </section>
+
+    <!-- 资料出处区域 -->
+    <section id="sourcesPanel" class="sources hidden">
+      <h2 class="section-title">资料出处</h2>
+      <ul id="sourcesList" class="sources-list"></ul>
+    </section>
+
+    <!-- 加入错题集按钮 -->
+    <div class="field">
+      <button id="saveMistakeBtn" class="btn-secondary" type="button" disabled>加入错题集</button>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">码上知新 · 课程答疑演示页</footer>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
