@@ -14,7 +14,9 @@ RAG 驱动的编程查漏补缺与个性化复习助手。
 
 ## 当前进度
 
-项目准备阶段，尚未实现业务功能。## 本地编译与运行
+已完成第一个最小 C++ HTTP 后端：提供健康检查接口；尚未实现业务功能。
+
+## 本地编译与运行
 
 当前已验证环境：Windows、MSVC x64、CMake。
 
@@ -33,8 +35,30 @@ D:\mashang-build\hello.exe
 Mashangzhixin: C++ is ready!
 ```
 
+启动 HTTP 后端：
+
+```cmd
+D:\mashang-build\mashang_server.exe
+```
+
+服务启动后，在浏览器访问：
+
+```text
+http://127.0.0.1:8080/api/health
+```
+
+预期返回 HTTP 200 和以下 JSON。该接口需要在本地完成构建并启动后再验证，当前文档不将其写成已通过测试：
+
+```json
+{"status":"ok","message":"Mashangzhixin backend is running"}
+```
+
+停止服务时，在运行服务的终端按 `Ctrl+C`。
+
 说明：
-- 当前仅验证了 C++ 测试程序，尚未实现网页后端和 AI 功能。
+- `hello` 目标保留用于 C++ 环境检查。
+- HTTP 后端使用 `third_party/cpp-httplib/` 中固定版本的官方库文件。
+- 当前尚未验证 HTTP 接口的实际启动和浏览器响应。
 - 本机使用 D:/mashang-build 保存构建产物，
   避开此前构建过程中出现的中文路径编码问题。
 - 队友应根据自己的电脑选择可写的纯英文构建目录。
