@@ -62,3 +62,44 @@ http://127.0.0.1:8080/api/health
 - 本机使用 D:/mashang-build 保存构建产物，
   避开此前构建过程中出现的中文路径编码问题。
 - 队友应根据自己的电脑选择可写的纯英文构建目录。
+## 当前接口
+
+### 健康检查
+
+```text
+GET /api/health
+```
+
+用途：检查 C++ 后端是否正在运行。
+
+### 演示答疑
+
+```text
+POST /api/ask
+```
+
+请求示例：
+
+```json
+{
+  "course_id": "c-language",
+  "question": "What is a pointer?"
+}
+```
+
+返回内容示例：
+
+```json
+{
+  "answer": "这是 C 语言数组与指针的演示回答。",
+  "sources": [
+    {
+      "title": "C语言课程讲义",
+      "section": "数组与指针",
+      "page": null
+    }
+  ]
+}
+```
+
+说明：当前返回的是固定演示回答，尚未接入真实课程资料检索和大模型。
