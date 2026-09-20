@@ -14,7 +14,7 @@
  * 实际地址，并把 USE_MOCK 设为 false。
  * ============================================================= */
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 const API_BASE_URL = 'http://127.0.0.1:8080'; // 联调时改成后端电脑的地址
 
 const COURSE_NAMES = {
