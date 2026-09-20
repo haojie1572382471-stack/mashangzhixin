@@ -40,6 +40,15 @@ bool get_json_string(const std::string &body, const std::string &key, std::strin
 
 int main() {
     httplib::Server server;
+    server.set_default_headers({
+    {"Access-Control-Allow-Origin", "http://127.0.0.1:5500"},
+    {"Access-Control-Allow-Methods", "GET, POST, OPTIONS"},
+    {"Access-Control-Allow-Headers", "Content-Type"}
+});
+
+server.Options(R"(.*)", [](const httplib::Request &, httplib::Response &response) {
+    response.status = 204;
+});
 
     server.Get("/api/health", [](const httplib::Request &, httplib::Response &response) {
         response.set_content(
