@@ -126,6 +126,10 @@ bool get_json_string(const std::string &body, const std::string &key, std::strin
 
     return false;
 }
+
+bool is_supported_course(const std::string &course_id) {
+    return course_id == "cpp" || course_id == "data-structure";
+}
 }  // namespace
 
 int main() {
@@ -147,20 +151,46 @@ server.Options(R"(.*)", [](const httplib::Request &, httplib::Response &response
     server.Get("/api/health", [](const httplib::Request &, httplib::Response &response) {
         response.set_content(
             R"({"status":"ok","message":"Mashangzhixin backend is running"})",
-            "application/json");
+            "application/json; charset=utf-8");
     });
 
     server.Post("/api/ask", [](const httplib::Request &request, httplib::Response &response) {
+        std::string course_id;
         std::string question;
+        if (!get_json_string(request.body, "course_id", course_id) || course_id.empty()) {
+            response.status = 400;
+            response.set_content(
+                R"({"status":"error","message":"course_id is required"})",
+                "application/json; charset=utf-8");
+            return;
+        }
+
+        if (!is_supported_course(course_id)) {
+            response.status = 400;
+            response.set_content(
+                R"({"status":"error","message":"Unsupported course_id"})",
+                "application/json; charset=utf-8");
+            return;
+        }
+
         if (!get_json_string(request.body, "question", question) || question.empty()) {
             response.status = 400;
-            response.set_content(R"({"error":"question is required"})", "application/json");
+            response.set_content(
+                R"({"status":"error","message":"question is required"})",
+                "application/json; charset=utf-8");
+            return;
+        }
+
+        if (course_id == "cpp") {
+            response.set_content(
+                R"({"answer":"C++中的引用是已有对象的别名，指针是保存内存地址的变量。指针可以为空并改变指向，引用初始化后通常不能改为引用其他对象。","sources":[{"title":"C++程序设计课程讲义","section":"指针与引用","page":72}]})",
+                "application/json; charset=utf-8");
             return;
         }
 
         response.set_content(
-            R"({"answer":"这是 C 语言数组与指针的演示回答。","sources":[{"title":"C语言课程讲义","section":"数组与指针","page":null}]})",
-            "application/json");
+            R"({"answer":"二叉树是每个节点最多有两个子节点的树结构，两个子节点通常称为左子节点和右子节点。","sources":[{"title":"数据结构课程讲义","section":"树与二叉树","page":86}]})",
+            "application/json; charset=utf-8");
     });
 
     server.Post("/api/wrong-questions", [&](const httplib::Request &request,
@@ -175,8 +205,17 @@ server.Options(R"(.*)", [](const httplib::Request &, httplib::Response &response
             !get_json_string(request.body, "knowledge_point", knowledge_point) ||
             knowledge_point.empty()) {
             response.status = 400;
-            response.set_content(R"({"error":"course_id, question, answer and knowledge_point are required"})",
-                                 "application/json");
+            response.set_content(
+                R"({"status":"error","message":"course_id, question, answer and knowledge_point are required"})",
+                "application/json; charset=utf-8");
+            return;
+        }
+
+        if (!is_supported_course(course_id)) {
+            response.status = 400;
+            response.set_content(
+                R"({"status":"error","message":"Unsupported course_id"})",
+                "application/json; charset=utf-8");
             return;
         }
 
@@ -188,7 +227,7 @@ server.Options(R"(.*)", [](const httplib::Request &, httplib::Response &response
         response.set_content(
             "{\"status\":\"ok\",\"message\":\"Wrong question saved\",\"id\":" +
                 std::to_string(id) + "}",
-            "application/json");
+            "application/json; charset=utf-8");
     });
 
     server.Get("/api/wrong-questions", [&](const httplib::Request &, httplib::Response &response) {
@@ -208,7 +247,7 @@ server.Options(R"(.*)", [](const httplib::Request &, httplib::Response &response
                     escape_json_string(wrong_question.knowledge_point) + "\"}";
         }
         body += "]}";
-        response.set_content(body, "application/json");
+        response.set_content(body, "application/json; charset=utf-8");
     });
 
     std::cout << "Mashangzhixin backend listening at http://127.0.0.1:8080/api/health"
