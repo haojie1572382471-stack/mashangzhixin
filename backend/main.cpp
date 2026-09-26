@@ -13,6 +13,7 @@ struct WrongQuestion {
     std::string question;
     std::string answer;
     std::string knowledge_point;
+    std::string status;
 };
 
 std::string escape_json_string(const std::string &value) {
@@ -140,7 +141,7 @@ int main() {
 
     server.set_default_headers({
     {"Access-Control-Allow-Origin", "http://127.0.0.1:5500"},
-    {"Access-Control-Allow-Methods", "GET, POST, OPTIONS"},
+    {"Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS"},
     {"Access-Control-Allow-Headers", "Content-Type"}
 });
 
@@ -221,7 +222,8 @@ server.Options(R"(.*)", [](const httplib::Request &, httplib::Response &response
 
         std::lock_guard<std::mutex> lock(wrong_questions_mutex);
         const int id = next_wrong_question_id++;
-        wrong_questions.push_back({id, course_id, question, answer, knowledge_point});
+       wrong_questions.push_back(
+    {id, course_id, question, answer, knowledge_point, "待复习"});
 
         response.status = 201;
         response.set_content(
@@ -229,27 +231,105 @@ server.Options(R"(.*)", [](const httplib::Request &, httplib::Response &response
                 std::to_string(id) + "}",
             "application/json; charset=utf-8");
     });
+        server.Put(
+        R"(/api/wrong-questions/(\d+)/status)",
+        [&](const httplib::Request &request, httplib::Response &response) {
+            int id = 0;
 
-    server.Get("/api/wrong-questions", [&](const httplib::Request &, httplib::Response &response) {
-        std::lock_guard<std::mutex> lock(wrong_questions_mutex);
-        std::string body = R"({"items":[)";
-        for (std::size_t index = 0; index < wrong_questions.size(); ++index) {
-            if (index > 0) {
-                body += ',';
+            try {
+                id = std::stoi(request.matches[1].str());
+            } catch (...) {
+                response.status = 400;
+                response.set_content(
+                    R"({"status":"error","message":"Invalid wrong question id"})",
+                    "application/json; charset=utf-8");
+                return;
             }
 
-            const WrongQuestion &wrong_question = wrong_questions[index];
-            body += "{\"id\":" + std::to_string(wrong_question.id) +
-                    ",\"course_id\":\"" + escape_json_string(wrong_question.course_id) +
-                    "\",\"question\":\"" + escape_json_string(wrong_question.question) +
-                    "\",\"answer\":\"" + escape_json_string(wrong_question.answer) +
-                    "\",\"knowledge_point\":\"" +
-                    escape_json_string(wrong_question.knowledge_point) + "\"}";
-        }
-        body += "]}";
-        response.set_content(body, "application/json; charset=utf-8");
-    });
+            std::string new_status;
 
+            if (!get_json_string(request.body, "status", new_status) ||
+                new_status.empty()) {
+                response.status = 400;
+                response.set_content(
+                    R"({"status":"error","message":"status is required"})",
+                    "application/json; charset=utf-8");
+                return;
+            }
+
+            if (new_status != "待复习" &&
+                new_status != "易错" &&
+                new_status != "已掌握") {
+                response.status = 400;
+                response.set_content(
+                    R"({"status":"error","message":"Unsupported status"})",
+                    "application/json; charset=utf-8");
+                return;
+            }
+
+            std::lock_guard<std::mutex> lock(wrong_questions_mutex);
+
+            for (WrongQuestion &wrong_question : wrong_questions) {
+                if (wrong_question.id == id) {
+                    wrong_question.status = new_status;
+
+                    response.set_content(
+                        "{\"status\":\"ok\","
+                        "\"message\":\"Mastery status updated\","
+                        "\"id\":" +
+                            std::to_string(id) +
+                            ",\"new_status\":\"" +
+                            escape_json_string(new_status) + "\"}",
+                        "application/json; charset=utf-8");
+                    return;
+                }
+            }
+
+            response.status = 404;
+            response.set_content(
+                R"({"status":"error","message":"Wrong question not found"})",
+                "application/json; charset=utf-8");
+        });
+
+        server.Get(
+        "/api/wrong-questions",
+        [&](const httplib::Request &, httplib::Response &response) {
+            std::lock_guard<std::mutex> lock(wrong_questions_mutex);
+
+            std::string body = R"({"items":[)";
+
+            for (std::size_t index = 0;
+                 index < wrong_questions.size();
+                 ++index) {
+                if (index > 0) {
+                    body += ',';
+                }
+
+                const WrongQuestion &wrong_question =
+                    wrong_questions[index];
+
+                body +=
+                    "{\"id\":" +
+                    std::to_string(wrong_question.id) +
+                    ",\"course_id\":\"" +
+                    escape_json_string(wrong_question.course_id) +
+                    "\",\"question\":\"" +
+                    escape_json_string(wrong_question.question) +
+                    "\",\"answer\":\"" +
+                    escape_json_string(wrong_question.answer) +
+                    "\",\"knowledge_point\":\"" +
+                    escape_json_string(wrong_question.knowledge_point) +
+                    "\",\"status\":\"" +
+                    escape_json_string(wrong_question.status) +
+                    "\"}";
+            }
+
+            body += "]}";
+
+            response.set_content(
+                body,
+                "application/json; charset=utf-8");
+        });
     std::cout << "Mashangzhixin backend listening at http://127.0.0.1:8080/api/health"
               << std::endl;
 
