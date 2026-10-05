@@ -19,3 +19,10 @@ materials/
 # 前端依赖与构建结果
 node_modules/
 dist/
+# Runtime data
+data/wrong_questions.json
+data/wrong_questions.json.tmp
+# Runtime wrong-question data
+data/wrong_questions.json
+data/wrong_questions.json.tmp
+data/wrong_questions.json.bak

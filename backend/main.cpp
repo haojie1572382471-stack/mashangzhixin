@@ -1,9 +1,14 @@
 #include <httplib.h>
 
+#include <algorithm>
 #include <cctype>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -31,6 +36,9 @@ struct Exercise {
     std::string correct_answer;
     std::string explanation;
 };
+
+const std::filesystem::path kWrongQuestionsDataPath =
+    std::filesystem::path("data") / "wrong_questions.json";
 
 std::string escape_json_string(const std::string &value) {
     std::string escaped;
@@ -191,6 +199,366 @@ bool is_supported_course(const std::string &course_id) {
     return course_id == "cpp" || course_id == "data-structure";
 }
 
+bool is_supported_status(const std::string &status) {
+    return status == "待复习" || status == "易错" || status == "已掌握";
+}
+
+void append_wrong_question_json(std::string &body,
+                                const WrongQuestion &wrong_question) {
+    body += "{\"id\":" + std::to_string(wrong_question.id) +
+            ",\"course_id\":\"" +
+            escape_json_string(wrong_question.course_id) +
+            "\",\"question\":\"" +
+            escape_json_string(wrong_question.question) +
+            "\",\"answer\":\"" +
+            escape_json_string(wrong_question.answer) +
+            "\",\"knowledge_point\":\"" +
+            escape_json_string(wrong_question.knowledge_point) +
+            "\",\"status\":\"" +
+            escape_json_string(wrong_question.status) + "\"}";
+}
+
+std::string build_wrong_questions_file_json(
+    const std::vector<WrongQuestion> &wrong_questions,
+    int next_wrong_question_id) {
+    std::string body = "{\n  \"next_id\":" +
+                       std::to_string(next_wrong_question_id) +
+                       ",\n  \"items\":[";
+
+    for (std::size_t index = 0; index < wrong_questions.size(); ++index) {
+        if (index > 0) {
+            body += ',';
+        }
+        body += "\n    ";
+        append_wrong_question_json(body, wrong_questions[index]);
+    }
+
+    if (!wrong_questions.empty()) {
+        body += '\n';
+    }
+    body += "  ]\n}\n";
+    return body;
+}
+
+bool extract_json_array_objects(const std::string &body,
+                                const std::string &key,
+                                std::vector<std::string> &objects,
+                                std::string &error) {
+    const std::string key_token = "\"" + key + "\"";
+    const std::size_t key_position = body.find(key_token);
+    if (key_position == std::string::npos) {
+        error = "Missing JSON array: " + key;
+        return false;
+    }
+
+    std::size_t position = body.find(':', key_position + key_token.size());
+    if (position == std::string::npos) {
+        error = "Missing ':' after JSON key: " + key;
+        return false;
+    }
+
+    ++position;
+    while (position < body.size() &&
+           std::isspace(static_cast<unsigned char>(body[position]))) {
+        ++position;
+    }
+
+    if (position >= body.size() || body[position] != '[') {
+        error = "JSON key is not an array: " + key;
+        return false;
+    }
+
+    ++position;
+    bool in_string = false;
+    bool escaped = false;
+    int object_depth = 0;
+    std::size_t object_start = std::string::npos;
+
+    for (; position < body.size(); ++position) {
+        const char character = body[position];
+
+        if (in_string) {
+            if (escaped) {
+                escaped = false;
+            } else if (character == '\\') {
+                escaped = true;
+            } else if (character == '"') {
+                in_string = false;
+            }
+            continue;
+        }
+
+        if (character == '"') {
+            in_string = true;
+            continue;
+        }
+
+        if (character == '{') {
+            if (object_depth == 0) {
+                object_start = position;
+            }
+            ++object_depth;
+            continue;
+        }
+
+        if (character == '}') {
+            if (object_depth <= 0) {
+                error = "Unexpected '}' in JSON array: " + key;
+                return false;
+            }
+
+            --object_depth;
+            if (object_depth == 0) {
+                objects.push_back(
+                    body.substr(object_start, position - object_start + 1));
+                object_start = std::string::npos;
+            }
+            continue;
+        }
+
+        if (character == ']' && object_depth == 0) {
+            return true;
+        }
+
+        if (object_depth == 0 && character != ',' &&
+            !std::isspace(static_cast<unsigned char>(character))) {
+            error = "Unexpected value in JSON array: " + key;
+            return false;
+        }
+    }
+
+    error = "Unterminated JSON array: " + key;
+    return false;
+}
+
+bool parse_wrong_questions_json(
+    const std::string &body,
+    std::vector<WrongQuestion> &wrong_questions,
+    int &next_wrong_question_id,
+    std::string &error) {
+    int stored_next_id = 0;
+    if (!get_json_int(body, "next_id", stored_next_id) || stored_next_id < 1) {
+        error = "next_id is missing or invalid";
+        return false;
+    }
+
+    std::vector<std::string> item_objects;
+    if (!extract_json_array_objects(body, "items", item_objects, error)) {
+        return false;
+    }
+
+    std::vector<WrongQuestion> parsed_items;
+    int maximum_id = 0;
+
+    for (const std::string &object : item_objects) {
+        WrongQuestion item{};
+        if (!get_json_int(object, "id", item.id) || item.id < 1 ||
+            !get_json_string(object, "course_id", item.course_id) ||
+            !get_json_string(object, "question", item.question) ||
+            !get_json_string(object, "answer", item.answer) ||
+            !get_json_string(
+                object, "knowledge_point", item.knowledge_point) ||
+            !get_json_string(object, "status", item.status)) {
+            error = "A wrong-question record is incomplete or invalid";
+            return false;
+        }
+
+        if (!is_supported_course(item.course_id) || item.question.empty() ||
+            item.answer.empty() || item.knowledge_point.empty() ||
+            !is_supported_status(item.status)) {
+            error = "A wrong-question record contains unsupported values";
+            return false;
+        }
+
+        for (const WrongQuestion &existing : parsed_items) {
+            if (existing.id == item.id) {
+                error = "Duplicate wrong-question id: " +
+                        std::to_string(item.id);
+                return false;
+            }
+        }
+
+        maximum_id = std::max(maximum_id, item.id);
+        parsed_items.push_back(std::move(item));
+    }
+
+    wrong_questions = std::move(parsed_items);
+    next_wrong_question_id = std::max(stored_next_id, maximum_id + 1);
+    return true;
+}
+
+bool read_text_file(const std::filesystem::path &path,
+                    std::string &contents,
+                    std::string &error) {
+    std::ifstream input(path, std::ios::binary);
+    if (!input) {
+        error = "Cannot open data file: " + path.string();
+        return false;
+    }
+
+    std::ostringstream buffer;
+    buffer << input.rdbuf();
+    if (!input.good() && !input.eof()) {
+        error = "Cannot read data file: " + path.string();
+        return false;
+    }
+
+    contents = buffer.str();
+    return true;
+}
+
+bool load_wrong_questions(const std::filesystem::path &data_path,
+                          std::vector<WrongQuestion> &wrong_questions,
+                          int &next_wrong_question_id,
+                          std::string &error) {
+    std::error_code filesystem_error;
+    const bool data_file_exists =
+        std::filesystem::exists(data_path, filesystem_error);
+    if (filesystem_error) {
+        error = "Cannot inspect data file: " + filesystem_error.message();
+        return false;
+    }
+
+    std::filesystem::path backup_path = data_path;
+    backup_path += ".bak";
+
+    if (!data_file_exists) {
+        const bool backup_exists =
+            std::filesystem::exists(backup_path, filesystem_error);
+        if (filesystem_error) {
+            error = "Cannot inspect backup data file: " +
+                    filesystem_error.message();
+            return false;
+        }
+
+        if (!backup_exists) {
+            wrong_questions.clear();
+            next_wrong_question_id = 1;
+            return true;
+        }
+    }
+
+    const std::filesystem::path path_to_read =
+        data_file_exists ? data_path : backup_path;
+    std::string contents;
+    if (!read_text_file(path_to_read, contents, error)) {
+        return false;
+    }
+
+    if (parse_wrong_questions_json(
+            contents, wrong_questions, next_wrong_question_id, error)) {
+        return true;
+    }
+
+    if (path_to_read == backup_path) {
+        return false;
+    }
+
+    std::string backup_contents;
+    std::string backup_error;
+    if (!read_text_file(backup_path, backup_contents, backup_error)) {
+        error += "; backup recovery unavailable: " + backup_error;
+        return false;
+    }
+
+    if (!parse_wrong_questions_json(
+            backup_contents,
+            wrong_questions,
+            next_wrong_question_id,
+            backup_error)) {
+        error += "; backup recovery failed: " + backup_error;
+        return false;
+    }
+
+    std::cerr << "Warning: recovered wrong questions from backup file: "
+              << backup_path.string() << std::endl;
+    return true;
+}
+
+bool save_wrong_questions(const std::filesystem::path &data_path,
+                          const std::vector<WrongQuestion> &wrong_questions,
+                          int next_wrong_question_id,
+                          std::string &error) {
+    std::error_code filesystem_error;
+    std::filesystem::create_directories(
+        data_path.parent_path(), filesystem_error);
+    if (filesystem_error) {
+        error = "Cannot create data directory: " +
+                filesystem_error.message();
+        return false;
+    }
+
+    std::filesystem::path temporary_path = data_path;
+    temporary_path += ".tmp";
+    std::filesystem::path backup_path = data_path;
+    backup_path += ".bak";
+
+    {
+        std::ofstream output(
+            temporary_path, std::ios::binary | std::ios::trunc);
+        if (!output) {
+            error = "Cannot open temporary data file for writing: " +
+                    temporary_path.string();
+            return false;
+        }
+
+        output << build_wrong_questions_file_json(
+            wrong_questions, next_wrong_question_id);
+        output.flush();
+        if (!output) {
+            error = "Cannot write temporary data file: " +
+                    temporary_path.string();
+            return false;
+        }
+    }
+
+    std::filesystem::remove(backup_path, filesystem_error);
+    if (filesystem_error) {
+        error = "Cannot remove stale data backup: " +
+                filesystem_error.message();
+        std::error_code cleanup_error;
+        std::filesystem::remove(temporary_path, cleanup_error);
+        return false;
+    }
+    filesystem_error.clear();
+
+    const bool original_exists =
+        std::filesystem::exists(data_path, filesystem_error);
+    if (filesystem_error) {
+        error = "Cannot inspect existing data file: " +
+                filesystem_error.message();
+        std::filesystem::remove(temporary_path, filesystem_error);
+        return false;
+    }
+
+    if (original_exists) {
+        std::filesystem::rename(data_path, backup_path, filesystem_error);
+        if (filesystem_error) {
+            error = "Cannot create data backup: " +
+                    filesystem_error.message();
+            std::filesystem::remove(temporary_path, filesystem_error);
+            return false;
+        }
+    }
+
+    std::filesystem::rename(temporary_path, data_path, filesystem_error);
+    if (filesystem_error) {
+        const std::string rename_error = filesystem_error.message();
+        std::error_code recovery_error;
+        if (original_exists) {
+            std::filesystem::rename(backup_path, data_path, recovery_error);
+        }
+        std::filesystem::remove(temporary_path, recovery_error);
+        error = "Cannot replace data file: " + rename_error;
+        return false;
+    }
+
+    if (original_exists) {
+        std::filesystem::remove(backup_path, filesystem_error);
+    }
+    return true;
+}
+
 std::string normalize_answer(std::string answer) {
     while (!answer.empty() &&
            std::isspace(static_cast<unsigned char>(answer.front()))) {
@@ -329,6 +697,25 @@ int main() {
     std::vector<WrongQuestion> wrong_questions;
     std::mutex wrong_questions_mutex;
     int next_wrong_question_id = 1;
+
+    std::string load_error;
+    if (!load_wrong_questions(
+            kWrongQuestionsDataPath,
+            wrong_questions,
+            next_wrong_question_id,
+            load_error)) {
+        std::cerr << "Failed to load wrong-question data: " << load_error
+                  << std::endl;
+        std::cerr << "Fix or restore "
+                  << std::filesystem::absolute(kWrongQuestionsDataPath).string()
+                  << " before restarting the server." << std::endl;
+        return 1;
+    }
+
+    std::cout << "Loaded " << wrong_questions.size()
+              << " wrong question(s) from "
+              << std::filesystem::absolute(kWrongQuestionsDataPath).string()
+              << std::endl;
 
     server.set_default_headers({
         {"Access-Control-Allow-Origin", "http://127.0.0.1:5500"},
@@ -519,7 +906,7 @@ int main() {
                     }
 
                     std::lock_guard<std::mutex> lock(wrong_questions_mutex);
-                    const int id = next_wrong_question_id++;
+                    const int id = next_wrong_question_id;
                     wrong_questions.push_back(
                         {id,
                          course_id,
@@ -527,6 +914,23 @@ int main() {
                          answer,
                          knowledge_point,
                          "待复习"});
+                    ++next_wrong_question_id;
+
+                    std::string save_error;
+                    if (!save_wrong_questions(
+                            kWrongQuestionsDataPath,
+                            wrong_questions,
+                            next_wrong_question_id,
+                            save_error)) {
+                        wrong_questions.pop_back();
+                        --next_wrong_question_id;
+                        response.status = 500;
+                        response.set_content(
+                            "{\"status\":\"error\",\"message\":\"Failed to persist wrong question: " +
+                                escape_json_string(save_error) + "\"}",
+                            "application/json; charset=utf-8");
+                        return;
+                    }
 
                     response.status = 201;
                     response.set_content(
@@ -560,8 +964,7 @@ int main() {
                 return;
             }
 
-            if (new_status != "待复习" && new_status != "易错" &&
-                new_status != "已掌握") {
+            if (!is_supported_status(new_status)) {
                 response.status = 400;
                 response.set_content(
                     R"({"status":"error","message":"Unsupported status"})",
@@ -572,7 +975,24 @@ int main() {
             std::lock_guard<std::mutex> lock(wrong_questions_mutex);
             for (WrongQuestion &wrong_question : wrong_questions) {
                 if (wrong_question.id == id) {
+                    const std::string previous_status = wrong_question.status;
                     wrong_question.status = new_status;
+
+                    std::string save_error;
+                    if (!save_wrong_questions(
+                            kWrongQuestionsDataPath,
+                            wrong_questions,
+                            next_wrong_question_id,
+                            save_error)) {
+                        wrong_question.status = previous_status;
+                        response.status = 500;
+                        response.set_content(
+                            "{\"status\":\"error\",\"message\":\"Failed to persist mastery status: " +
+                                escape_json_string(save_error) + "\"}",
+                            "application/json; charset=utf-8");
+                        return;
+                    }
+
                     response.set_content(
                         "{\"status\":\"ok\",\"message\":\"Mastery status updated\",\"id\":" +
                             std::to_string(id) + ",\"new_status\":\"" +
@@ -603,18 +1023,7 @@ int main() {
                        const WrongQuestion &wrong_question =
                            wrong_questions[index];
 
-                       body +=
-                           "{\"id\":" + std::to_string(wrong_question.id) +
-                           ",\"course_id\":\"" +
-                           escape_json_string(wrong_question.course_id) +
-                           "\",\"question\":\"" +
-                           escape_json_string(wrong_question.question) +
-                           "\",\"answer\":\"" +
-                           escape_json_string(wrong_question.answer) +
-                           "\",\"knowledge_point\":\"" +
-                           escape_json_string(wrong_question.knowledge_point) +
-                           "\",\"status\":\"" +
-                           escape_json_string(wrong_question.status) + "\"}";
+                       append_wrong_question_json(body, wrong_question);
                    }
 
                    body += "]}";
