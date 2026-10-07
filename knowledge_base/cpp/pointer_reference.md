@@ -27,3 +27,6 @@ int& reference = value;
 
 *pointer = 20;
 reference = 30;
+```
+
+来源：项目测试知识库，后续可以替换为正式课程讲义。

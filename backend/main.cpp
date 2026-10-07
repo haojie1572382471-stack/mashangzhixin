@@ -1,5 +1,7 @@
 #include <httplib.h>
 
+#include "rag_retriever.h"
+
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
@@ -39,6 +41,8 @@ struct Exercise {
 
 const std::filesystem::path kWrongQuestionsDataPath =
     std::filesystem::path("data") / "wrong_questions.json";
+
+const std::filesystem::path kKnowledgeBasePath = "knowledge_base";
 
 std::string escape_json_string(const std::string &value) {
     std::string escaped;
@@ -83,6 +87,30 @@ std::string escape_json_string(const std::string &value) {
     }
 
     return escaped;
+}
+
+std::string build_rag_response_json(
+    const mashangzhixin::RagAnswer &rag_answer) {
+    std::string body =
+        "{\"answer\":\"" + escape_json_string(rag_answer.answer) +
+        "\",\"sources\":[";
+
+    for (std::size_t index = 0; index < rag_answer.sources.size(); ++index) {
+        if (index > 0) {
+            body += ',';
+        }
+
+        const mashangzhixin::RagSource &source = rag_answer.sources[index];
+        body += "{\"title\":\"" + escape_json_string(source.title) +
+                "\",\"section\":\"" +
+                escape_json_string(source.section) +
+                "\",\"path\":\"" +
+                escape_json_string(source.relative_path) +
+                "\",\"page\":null}";
+    }
+
+    body += "]}";
+    return body;
 }
 
 bool get_json_value_position(const std::string &body,
@@ -698,6 +726,23 @@ int main() {
     std::mutex wrong_questions_mutex;
     int next_wrong_question_id = 1;
 
+    mashangzhixin::RagRetriever rag_retriever(kKnowledgeBasePath);
+    std::string rag_load_error;
+    if (!rag_retriever.load(rag_load_error)) {
+        std::cerr << "Failed to load course knowledge base: "
+                  << rag_load_error << std::endl;
+        std::cerr << "Start the server from the project root so that "
+                  << std::filesystem::absolute(kKnowledgeBasePath).string()
+                  << " can be found." << std::endl;
+        return 1;
+    }
+
+    std::cout << "Loaded " << rag_retriever.document_count()
+              << " knowledge document(s) and "
+              << rag_retriever.chunk_count() << " chunk(s) from "
+              << std::filesystem::absolute(kKnowledgeBasePath).string()
+              << std::endl;
+
     std::string load_error;
     if (!load_wrong_questions(
             kWrongQuestionsDataPath,
@@ -735,7 +780,8 @@ int main() {
                });
 
     server.Post("/api/ask",
-                [](const httplib::Request &request, httplib::Response &response) {
+                [&rag_retriever](const httplib::Request &request,
+                                 httplib::Response &response) {
                     std::string course_id;
                     std::string question;
 
@@ -765,15 +811,10 @@ int main() {
                         return;
                     }
 
-                    if (course_id == "cpp") {
-                        response.set_content(
-                            R"({"answer":"C++中的引用是已有对象的别名，指针是保存内存地址的变量。指针可以为空并改变指向，引用初始化后通常不能改为引用其他对象。","sources":[{"title":"C++程序设计课程讲义","section":"指针与引用","page":72}]})",
-                            "application/json; charset=utf-8");
-                        return;
-                    }
-
+                    const mashangzhixin::RagAnswer rag_answer =
+                        rag_retriever.answer(course_id, question, 5);
                     response.set_content(
-                        R"({"answer":"二叉树是每个节点最多有两个子节点的树结构，两个子节点通常称为左子节点和右子节点。","sources":[{"title":"数据结构课程讲义","section":"树与二叉树","page":86}]})",
+                        build_rag_response_json(rag_answer),
                         "application/json; charset=utf-8");
                 });
 
