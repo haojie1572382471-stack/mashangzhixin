@@ -52,6 +52,52 @@ std::string lower_ascii(std::string value) {
     return value;
 }
 
+void replace_all(std::string &value,
+                 const std::string &needle,
+                 const std::string &replacement) {
+    if (needle.empty()) {
+        return;
+    }
+
+    std::size_t position = 0;
+    while ((position = value.find(needle, position)) != std::string::npos) {
+        value.replace(position, needle.size(), replacement);
+        position += replacement.size();
+    }
+}
+
+std::string normalize_question(std::string value) {
+    value = lower_ascii(std::move(value));
+
+    // Course selection is already supplied separately. Removing course names
+    // and common question scaffolding keeps them from making every chunk look
+    // relevant to the same query.
+    static const std::vector<std::string> removable_phrases = {
+        "c++", "cpp", "数据结构", "程序设计",
+        "有什么作用", "有什么区别", "有哪些区别", "有何区别", "有哪些",
+        "有什么不同", "是什么意思", "什么是", "是什么", "怎么样", "是多少",
+        "请问", "请解释", "请说明", "为什么", "如何", "怎么", "怎样",
+        "以及", "和", "与", "及", "跟", "的",
+        "？", "。", "，", "！", "：", "；", "、", "（", "）"};
+
+    for (const std::string &phrase : removable_phrases) {
+        replace_all(value, phrase, " ");
+    }
+    return value;
+}
+
+std::string compact_phrase(const std::string &value) {
+    std::string compact;
+    compact.reserve(value.size());
+    for (const unsigned char byte : value) {
+        if (byte >= 0x80 || std::isalnum(byte) || byte == '+' ||
+            byte == '#' || byte == '_') {
+            compact.push_back(static_cast<char>(byte));
+        }
+    }
+    return compact;
+}
+
 std::string normalize_course_directory(std::string value) {
     value = lower_ascii(std::move(value));
     if (value == "cpp") {
@@ -128,9 +174,9 @@ bool is_ascii_word_character(std::uint32_t code_point) {
 bool is_stop_token(const std::string &token) {
     static const std::unordered_set<std::string> stop_tokens = {
         "a", "an", "and", "are", "does", "how", "is", "of",
-        "the", "to", "what", "which", "why",
+        "the", "to", "what", "which", "why", "c++", "cpp",
         "一个", "一种", "什么", "为何", "哪些", "可以", "如何",
-        "怎么", "怎样", "是否", "请问"};
+        "怎么", "怎样", "是否", "请问", "中", "里", "吗", "呢"};
     return stop_tokens.find(token) != stop_tokens.end();
 }
 
@@ -441,7 +487,10 @@ RagAnswer RagRetriever::answer(const std::string &course_id,
                                const std::string &question,
                                std::size_t maximum_sources) const {
     RagAnswer result;
-    const std::vector<std::string> query_tokens = tokenize(question);
+    const std::string normalized_question = normalize_question(question);
+    const std::vector<std::string> query_tokens =
+        tokenize(normalized_question);
+    const std::string compact_question = compact_phrase(normalized_question);
 
     if (query_tokens.empty() || maximum_sources == 0) {
         result.answer =
@@ -472,20 +521,21 @@ RagAnswer RagRetriever::answer(const std::string &course_id,
                 count_occurrences(searchable_title, token);
             const std::size_t section_matches =
                 count_occurrences(searchable_section, token);
-            const std::size_t content_matches =
-                count_occurrences(searchable_content, token);
+            const std::size_t content_matches = std::min<std::size_t>(
+                count_occurrences(searchable_content, token), 3);
             const std::size_t context_matches =
                 count_occurrences(searchable_context, token);
 
-            if (title_matches + section_matches + content_matches +
-                    context_matches >
-                0) {
+            // Document metadata is shared by every section. It may provide a
+            // small boost after a real match, but it must never make an
+            // otherwise unrelated section eligible by itself.
+            if (title_matches + section_matches + content_matches > 0) {
                 ++matched_tokens;
                 score += significance *
                          (8.0 * static_cast<double>(title_matches) +
-                          10.0 * static_cast<double>(section_matches) +
-                          2.0 * static_cast<double>(content_matches) +
-                          1.0 * static_cast<double>(context_matches));
+                          12.0 * static_cast<double>(section_matches) +
+                          2.5 * static_cast<double>(content_matches) +
+                          0.25 * static_cast<double>(context_matches));
             }
         }
 
@@ -493,12 +543,28 @@ RagAnswer RagRetriever::answer(const std::string &course_id,
             continue;
         }
 
+        const std::string compact_section =
+            compact_phrase(normalize_question(chunk.section));
+        if (!compact_question.empty() && !compact_section.empty() &&
+            compact_section.find(compact_question) != std::string::npos) {
+            score += 50.0;
+        }
+
         const double coverage =
             static_cast<double>(matched_tokens) /
             static_cast<double>(query_tokens.size());
+
+        // A single incidental word is not enough for a multi-concept query.
+        // This prevents, for example, a data-structure paragraph mentioning
+        // a queue pointer from answering a pointer-versus-reference question.
+        const std::size_t minimum_matched_tokens =
+            std::min<std::size_t>(2, query_tokens.size());
+        if (matched_tokens < minimum_matched_tokens || coverage < 0.45) {
+            continue;
+        }
         score *= 0.75 + coverage;
 
-        if (score >= 2.0) {
+        if (score >= 3.0) {
             scored_chunks.push_back({chunk_index, score});
         }
     }
@@ -525,8 +591,15 @@ RagAnswer RagRetriever::answer(const std::string &course_id,
         return result;
     }
 
-    const std::size_t result_count =
-        std::min(maximum_sources, scored_chunks.size());
+    const double best_score = scored_chunks.front().score;
+    const double relative_cutoff = std::max(3.0, best_score * 0.70);
+
+    std::size_t result_count = 0;
+    while (result_count < scored_chunks.size() &&
+           result_count < maximum_sources &&
+           scored_chunks[result_count].score >= relative_cutoff) {
+        ++result_count;
+    }
     result.answer = "根据" + course_display_name(course_id) +
                     "课程知识库，检索到以下相关内容：";
 
