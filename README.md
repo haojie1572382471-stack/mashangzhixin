@@ -2,6 +2,13 @@
 
 面向 C++ 与数据结构学习的课程答疑、错题整理与复习助手。
 
+## 本机工作目录
+
+当前完整仓库位于：`D:\Program Files\码上新智\mashangzhixin`。
+代码导出文档位于：`D:\Program Files\码上新智\文档`。后续本机生成的交付文档统一放到该目录。
+迁移后在 GitHub Desktop 中通过 File → Add local repository 选择新的仓库路径。
+其他队员可使用自己的目录；运行命令时应位于含 CMakeLists.txt 的项目根目录。
+
 ## 当前实现
 
 - Markdown 课程资料分块、关键词评分检索及来源返回。
