@@ -6113,7 +6113,7 @@ var mkSideEl=document.getElementById('mk-side');
 var mkQEl=document.getElementById('mk-q');
 var mkCatEl=document.getElementById('mk-cat-filter');
 var MK_KEY='mzx_mistakes';
-var MK_API_BASE='http://127.0.0.1:8080';
+var MK_API_BASE=location.port==='8080'?location.origin:'http://127.0.0.1:8080';
 var MK_API_WRONG=MK_API_BASE+'/api/wrong-questions';
 var MK_API_RECOMMENDATIONS=MK_API_BASE+'/api/recommendations';
 var MK_API_SUBMIT=MK_API_BASE+'/api/exercises/submit';
@@ -6933,7 +6933,7 @@ for(var i=0;i<links.length;i++){
  *   POST /api/wrong-questions     { course_id, question, answer, knowledge_point } → { status, message, id }
  * ===================================================== */
 var viewQa=document.getElementById('view-qa');
-var QA_API_BASE='http://127.0.0.1:8080';
+var QA_API_BASE=MK_API_BASE;
 var QA_API_ASK=QA_API_BASE+'/api/ask';
 var QA_API_WRONG=QA_API_BASE+'/api/wrong-questions';       /* POST 保存错题 */
 var QA_API_WRONG_GET=QA_API_BASE+'/api/wrong-questions';   /* GET 读取错题列表 */
@@ -6978,12 +6978,8 @@ function qaFormat(raw){
   return blocks.join('')||'<p>（后端未返回回答内容）</p>';
 }
 function qaPlain(raw){
-  return String(raw==null?'':raw)
-    .replace(/<br\s*\/?>/gi,'\n').replace(/<\/(p|li|div)>/gi,'\n')
-    .replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ')
-    .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
-    .replace(/&quot;/g,'"').replace(/&#39;/g,"'")
-    .replace(/\n{3,}/g,'\n\n').trim();
+  // Preserve C++ templates such as vector<int> when saving a model answer.
+  return String(raw==null?'':raw).trim();
 }
 function qaToast(msg,type){
   toast(msg);
@@ -7063,11 +7059,12 @@ function qaRenderAnswer(data,meta){
   qaState.headBadge.textContent=qaName(meta.courseId);
   qaState.answer.hidden=false;
   qaState.body.innerHTML=qaFormat(raw);
-  qaState.meta.textContent='课程：'+qaName(meta.courseId)+' · 完成于 '+qaNow();
+  var modeLabel=meta.demo?'演示数据':data.mode==='generated'?'AI 讲解':data.mode==='no_evidence'?'资料不足':'资料摘录';
+  qaState.meta.textContent=modeLabel+' · 课程：'+qaName(meta.courseId)+' · 完成于 '+qaNow();
   qaState.src.hidden=false;
   if(sources.length){
     qaState.srcList.innerHTML=sources.map(function(s){
-      var page=(s&&s.page!=null)?('第 '+s.page+' 页'):'在线资源';
+      var page=(s&&s.page!=null)?('第 '+s.page+' 页'):((s&&s.path)||'课程资料');
       return '<div class="qa-src"><span class="qa-src-ico">📖</span><div class="qa-src-main">'+
         '<div class="qa-src-title">'+sugEsc((s&&s.title)||'未命名资料')+'</div>'+
         '<div class="qa-src-meta">'+sugEsc((s&&s.section)||'—')+' · '+sugEsc(page)+'</div></div></div>';
@@ -7077,11 +7074,12 @@ function qaRenderAnswer(data,meta){
   }
   qaCurrent={courseId:meta.courseId,question:meta.question,answerText:qaPlain(raw),sources:sources};
   qaSaveState='idle';
-  qaState.save.disabled=false;
+  qaState.save.disabled=!!meta.demo||data.mode==='no_evidence';
   qaState.save.textContent='加入错题集';
   qaState.saveHint.textContent='会调用 '+QA_API_WRONG+' 保存到你的错题集。';
   qaState.link.hidden=true;
-  qaSetStatus('success','回答完成 · '+qaName(meta.courseId)+' · '+qaNow());
+  qaSetStatus('success',meta.demo?'演示数据：未调用大模型，不可保存为学习记录。':(data.notice||modeLabel));
+  if(meta.demo||data.mode==='no_evidence') qaCurrent=null;
 }
 async function qaAsk(forced,opts){
   var options=opts||{};
@@ -7138,7 +7136,7 @@ async function qaRunMock(question){
   qaState.src.hidden=true;
   try{
     var data=await qaMock(qaState.course.value);
-    qaRenderAnswer(data,{courseId:qaState.course.value,question:q});
+    qaRenderAnswer(data,{courseId:qaState.course.value,question:q,demo:true});
     toast('已展示演示数据（未调用后端）');
   }catch(e){
     qaSetStatus('error','演示数据生成失败');

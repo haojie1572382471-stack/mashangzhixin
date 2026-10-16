@@ -19,6 +19,8 @@ materials/
 # 前端依赖与构建结果
 node_modules/
 dist/
+__pycache__/
+*.pyc
 # Runtime data
 data/wrong_questions.json
 data/wrong_questions.json.tmp

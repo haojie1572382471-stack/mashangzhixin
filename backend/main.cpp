@@ -109,7 +109,8 @@ std::string build_rag_response_json(
                 "\",\"page\":null}";
     }
 
-    body += "]}";
+    body += "],\"mode\":\"" + escape_json_string(rag_answer.mode) +
+            "\",\"notice\":\"" + escape_json_string(rag_answer.notice) + "\"}";
     return body;
 }
 
@@ -722,6 +723,12 @@ std::string build_recommendations_json(const std::vector<const Exercise *> &matc
 
 int main() {
     httplib::Server server;
+    server.set_payload_max_length(65536);
+    // Serve only the frontend directory; .env and runtime data stay private.
+    if (!server.set_mount_point("/", "frontend")) {
+        std::cerr << "Cannot serve frontend; start from the project root." << std::endl;
+        return 1;
+    }
     std::vector<WrongQuestion> wrong_questions;
     std::mutex wrong_questions_mutex;
     int next_wrong_question_id = 1;
@@ -811,8 +818,49 @@ int main() {
                         return;
                     }
 
-                    const mashangzhixin::RagAnswer rag_answer =
+                    if (question.size() > 6000 ||
+                        question.find_first_not_of(" \t\r\n") == std::string::npos) {
+                        response.status = 400;
+                        response.set_content(
+                            R"({"status":"error","message":"Question is empty or too long"})",
+                            "application/json; charset=utf-8");
+                        return;
+                    }
+
+                    mashangzhixin::RagAnswer rag_answer =
                         rag_retriever.answer(course_id, question, 5);
+                    if (rag_answer.sources.empty()) {
+                        rag_answer.mode = "no_evidence";
+                        rag_answer.notice = "未找到足够相关的课程资料，未调用大模型。";
+                    } else {
+                        // The local Python gateway handles HTTPS and provider JSON
+                        // using the standard library. No credentials enter the browser.
+                        httplib::Client gateway("127.0.0.1", 8081);
+                        gateway.set_connection_timeout(2);
+                        gateway.set_read_timeout(50);
+                        gateway.set_write_timeout(5);
+                        const std::string payload =
+                            "{\"course_id\":\"" + escape_json_string(course_id) +
+                            "\",\"question\":\"" + escape_json_string(question) +
+                            "\",\"context\":\"" + escape_json_string(rag_answer.answer) + "\"}";
+                        const auto result = gateway.Post(
+                            "/generate", payload, "application/json; charset=utf-8");
+                        std::string mode, answer, reason;
+                        if (result && result->status == 200 &&
+                            get_json_string(result->body, "mode", mode) &&
+                            mode == "generated" &&
+                            get_json_string(result->body, "answer", answer) &&
+                            !answer.empty()) {
+                            rag_answer.answer = std::move(answer);
+                            rag_answer.mode = "generated";
+                            rag_answer.notice = "AI 已依据下列检索资料生成讲解，请结合原文核对。";
+                        } else {
+                            if (result) get_json_string(result->body, "reason", reason);
+                            rag_answer.notice = reason == "not_configured"
+                                ? "尚未配置大模型，以下为课程资料摘录。"
+                                : "大模型服务暂不可用，以下为课程资料摘录。";
+                        }
+                    }
                     response.set_content(
                         build_rag_response_json(rag_answer),
                         "application/json; charset=utf-8");

@@ -18,6 +18,8 @@ struct RagSource {
 struct RagAnswer {
     std::string answer;
     std::vector<RagSource> sources;
+    std::string mode = "retrieval";
+    std::string notice;
 };
 
 class RagRetriever {
