@@ -52,7 +52,7 @@ class GatewayTests(unittest.TestCase):
         self.env = patch.dict(os.environ, {
             "LLM_API_URL": f"http://127.0.0.1:{self.provider.server_port}/chat/completions",
             "LLM_API_KEY": "test-only-not-a-real-key", "LLM_MODEL": "test-model",
-            "LLM_TIMEOUT_SECONDS": "2",
+            "LLM_TIMEOUT_SECONDS": "2", "LLM_THINKING": "",
         })
         self.env.start()
         self.addCleanup(self.env.stop)
@@ -68,6 +68,15 @@ class GatewayTests(unittest.TestCase):
     def test_unconfigured(self):
         with patch.dict(os.environ, {"LLM_API_KEY": ""}):
             self.assertEqual(gateway.generate(self.payload)["reason"], "not_configured")
+
+    def test_thinking_configuration(self):
+        with patch.dict(os.environ, {"LLM_THINKING": "disabled"}):
+            self.assertEqual(gateway.generate(self.payload)["mode"], "generated")
+            self.assertEqual(Provider.received["thinking"], {"type": "disabled"})
+        gateway.generate(self.payload)
+        self.assertNotIn("thinking", Provider.received)
+        with patch.dict(os.environ, {"LLM_THINKING": "typo"}):
+            self.assertEqual(gateway.generate(self.payload)["reason"], "invalid_config")
 
     def test_bad_provider_response(self):
         for response in ({}, {"choices": []}, {"choices": [{"message": {"content": None}}]},

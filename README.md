@@ -45,16 +45,31 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1
 填写以下三项：
 
 ```dotenv
-LLM_API_URL=https://你的服务商提供的完整接口地址/chat/completions
-LLM_MODEL=你的模型名称
+LLM_API_URL=https://api.deepseek.com/chat/completions
+LLM_MODEL=deepseek-flash
 LLM_API_KEY=你的API密钥
 LLM_TIMEOUT_SECONDS=30
+LLM_THINKING=disabled
 ```
 
 接口地址须使用该服务商支持的完整 Chat Completions 路径，不要填写控制台网址。
 远程地址要求 HTTPS；仅本机测试允许 HTTP。默认等待 30 秒，可设置 1—45 秒。
 系统环境变量优先于 .env，修改后重启服务生效。密钥只由本地网关读取，禁止提交到仓库。
 .env 已由 .gitignore 忽略，.env.example 不包含密钥。
+
+模板已预填 DeepSeek 地址和模型，只需填写 LLM_API_KEY。当前代码读取 LLM_API_KEY，
+不读取 DEEPSEEK_API_KEY。DeepSeek 使用非思考模式进行短课程答疑；切换到其他服务商时，
+若其不支持 thinking 参数，请清空 LLM_THINKING。
+参数说明见 [DeepSeek 官方文档](https://api-docs.deepseek.com/guides/thinking_mode/)。
+
+填好密钥后，可以先独立测试一次真实 API，无需启动后端：
+
+```powershell
+python .\scripts\test_api.py
+```
+
+该命令会发送一条简短测试问题，按服务商规则计费；只显示成功或错误类型，不打印密钥。
+缺少配置时不发送请求；成功返回退出码 0，调用失败返回 1，未配置返回 2。
 
 未填写配置也可以启动，此时显示真实检索资料摘录，不冒充 AI 生成。
 启用模型后，问题和检索到的课程片段会发送到所配置的模型服务；使用适合外发的资料。

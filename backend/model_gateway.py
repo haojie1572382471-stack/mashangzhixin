@@ -51,7 +51,7 @@ def generate(payload):
         return {"mode": "retrieval", "reason": "invalid_config"}
     try:
         timeout = max(1, min(45, int(os.getenv("LLM_TIMEOUT_SECONDS", "30"))))
-        body = json.dumps({
+        request_data = {
             "model": model,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -59,7 +59,13 @@ def generate(payload):
             ],
             "stream": False,
             "max_tokens": 1200,
-        }, ensure_ascii=False).encode("utf-8")
+        }
+        thinking = os.getenv("LLM_THINKING", "").strip()
+        if thinking:
+            if thinking not in ("enabled", "disabled"):
+                return {"mode": "retrieval", "reason": "invalid_config"}
+            request_data["thinking"] = {"type": thinking}
+        body = json.dumps(request_data, ensure_ascii=False).encode("utf-8")
         request = urllib.request.Request(endpoint, data=body, headers={
             "Content-Type": "application/json",
             "Authorization": "Bearer " + key,
@@ -77,8 +83,8 @@ def generate(payload):
         if not isinstance(answer, str) or not answer.strip() or len(answer) > 24000:
             raise ValueError("Invalid answer")
         return {"mode": "generated", "answer": answer.strip()}
-    except urllib.error.HTTPError:
-        return {"mode": "retrieval", "reason": "provider_error"}
+    except urllib.error.HTTPError as error:
+        return {"mode": "retrieval", "reason": "provider_error", "http_status": error.code}
     except (OSError, ValueError, KeyError, IndexError, TypeError):
         return {"mode": "retrieval", "reason": "unavailable"}
 
