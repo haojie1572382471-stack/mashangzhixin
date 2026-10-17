@@ -1,5 +1,6 @@
 #include <httplib.h>
 
+#include "llm_client.h"
 #include "rag_retriever.h"
 
 #include <algorithm>
@@ -750,6 +751,16 @@ int main() {
               << std::filesystem::absolute(kKnowledgeBasePath).string()
               << std::endl;
 
+    mashangzhixin::LlmClient llm_client;
+    if (llm_client.is_configured()) {
+        std::cout << "DeepSeek generation enabled with model: "
+                  << llm_client.model() << std::endl;
+    } else {
+        std::cout << "DEEPSEEK_API_KEY is not configured; "
+                  << "the server will use retrieval fallback answers."
+                  << std::endl;
+    }
+
     std::string load_error;
     if (!load_wrong_questions(
             kWrongQuestionsDataPath,
@@ -787,8 +798,9 @@ int main() {
                });
 
     server.Post("/api/ask",
-                [&rag_retriever](const httplib::Request &request,
-                                 httplib::Response &response) {
+                [&rag_retriever,
+                 &llm_client](const httplib::Request &request,
+                              httplib::Response &response) {
                     std::string course_id;
                     std::string question;
 
@@ -833,32 +845,20 @@ int main() {
                         rag_answer.mode = "no_evidence";
                         rag_answer.notice = "未找到足够相关的课程资料，未调用大模型。";
                     } else {
-                        // The local Python gateway handles HTTPS and provider JSON
-                        // using the standard library. No credentials enter the browser.
-                        httplib::Client gateway("127.0.0.1", 8081);
-                        gateway.set_connection_timeout(2);
-                        gateway.set_read_timeout(50);
-                        gateway.set_write_timeout(5);
-                        const std::string payload =
-                            "{\"course_id\":\"" + escape_json_string(course_id) +
-                            "\",\"question\":\"" + escape_json_string(question) +
-                            "\",\"context\":\"" + escape_json_string(rag_answer.answer) + "\"}";
-                        const auto result = gateway.Post(
-                            "/generate", payload, "application/json; charset=utf-8");
-                        std::string mode, answer, reason;
-                        if (result && result->status == 200 &&
-                            get_json_string(result->body, "mode", mode) &&
-                            mode == "generated" &&
-                            get_json_string(result->body, "answer", answer) &&
-                            !answer.empty()) {
-                            rag_answer.answer = std::move(answer);
+                        const mashangzhixin::LlmResult llm_result =
+                            llm_client.generate_answer(
+                                course_id, question, rag_answer.answer);
+                        if (llm_result.success) {
+                            rag_answer.answer = llm_result.answer;
                             rag_answer.mode = "generated";
                             rag_answer.notice = "AI 已依据下列检索资料生成讲解，请结合原文核对。";
                         } else {
-                            if (result) get_json_string(result->body, "reason", reason);
-                            rag_answer.notice = reason == "not_configured"
+                            rag_answer.notice =
+                                llm_result.error == "not_configured"
                                 ? "尚未配置大模型，以下为课程资料摘录。"
                                 : "大模型服务暂不可用，以下为课程资料摘录。";
+                            std::cerr << "DeepSeek generation failed: "
+                                      << llm_result.error << std::endl;
                         }
                     }
                     response.set_content(

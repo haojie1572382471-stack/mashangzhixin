@@ -16,6 +16,7 @@ endif()
 
 add_executable(mashang_server
     backend/main.cpp
+    backend/llm_client.cpp
     backend/rag_retriever.cpp
 )
 
@@ -29,5 +30,5 @@ if(MSVC)
 endif()
 
 if(WIN32)
-    target_link_libraries(mashang_server PRIVATE ws2_32)
+    target_link_libraries(mashang_server PRIVATE ws2_32 winhttp)
 endif()
