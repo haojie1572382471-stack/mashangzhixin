@@ -18,7 +18,7 @@ const USE_MOCK = false;
 const API_BASE_URL = 'http://127.0.0.1:8080'; // 联调时改成后端电脑的地址
 
 const COURSE_NAMES = {
-  'c-language': 'C 语言',
+  'cpp': 'C++程序设计',
   'data-structure': '数据结构',
   'algorithm': '算法设计',
   'python': 'Python',

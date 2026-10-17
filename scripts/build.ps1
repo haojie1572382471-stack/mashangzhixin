@@ -22,5 +22,5 @@ $buildDir = Join-Path $projectRoot 'build/app'
 $ninja = Join-Path $vsRoot 'Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe'
 & $cmake -S $projectRoot -B $buildDir -G 'Ninja' "-DCMAKE_MAKE_PROGRAM=$ninja" '-DCMAKE_BUILD_TYPE=Release'
 if ($LASTEXITCODE -ne 0) { throw 'CMake configure failed.' }
-& $cmake --build $buildDir --target mashang_server
+& $cmake --build $buildDir --target mashang_server llm_client_tests
 if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }

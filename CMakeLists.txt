@@ -1,33 +1,30 @@
 cmake_minimum_required(VERSION 3.20)
-
 project(Mashangzhixin LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
+if(NOT WIN32)
+    message(FATAL_ERROR "The native model client requires Windows WinHTTP and Windows Runtime JSON.")
+endif()
 add_executable(hello hello.cpp)
-
-target_compile_features(hello PRIVATE cxx_std_17)
-
-if(MSVC)
-    target_compile_options(hello PRIVATE /utf-8)
+add_library(mashang_llm backend/llm_client.cpp)
+target_include_directories(mashang_llm PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/backend")
+target_link_libraries(mashang_llm PUBLIC winhttp windowsapp)
+add_executable(mashang_server backend/main.cpp backend/rag_retriever.cpp)
+target_include_directories(mashang_server PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cpp-httplib")
+target_link_libraries(mashang_server PRIVATE mashang_llm ws2_32)
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(llm_client_tests tests/llm_client_tests.cpp)
+    target_include_directories(llm_client_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cpp-httplib")
+    target_link_libraries(llm_client_tests PRIVATE mashang_llm ws2_32)
+    add_test(NAME llm_client_tests COMMAND llm_client_tests)
 endif()
-
-add_executable(mashang_server
-    backend/main.cpp
-    backend/rag_retriever.cpp
-)
-
-target_compile_features(mashang_server PRIVATE cxx_std_17)
-target_include_directories(mashang_server PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cpp-httplib"
-)
-
 if(MSVC)
-    target_compile_options(mashang_server PRIVATE /utf-8)
-endif()
-
-if(WIN32)
-    target_link_libraries(mashang_server PRIVATE ws2_32)
+    foreach(target hello mashang_llm mashang_server)
+        target_compile_options(${target} PRIVATE /utf-8)
+    endforeach()
+    if(BUILD_TESTING)
+        target_compile_options(llm_client_tests PRIVATE /utf-8)
+    endif()
 endif()
