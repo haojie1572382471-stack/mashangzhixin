@@ -1338,6 +1338,89 @@ html.motion-off .dmnk-layer{display:none}
     padding-bottom:calc(76 * var(--u) + var(--sab))}
 }
 
+/* ============ 练习模式（开始学习） ============ */
+.view-practice{position:absolute; inset:0; z-index:4; pointer-events:auto;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  background:linear-gradient(180deg, rgba(3,12,28,.52) 0%, rgba(4,16,31,.84) 100%);
+  -webkit-backdrop-filter:blur(calc(14 * var(--u)));
+  backdrop-filter:blur(calc(14 * var(--u)));
+  opacity:0; visibility:hidden; transition:opacity .32s ease, visibility .32s}
+.view-practice.is-open{opacity:1; visibility:visible}
+.pr-wrap{max-width:calc(760 * var(--u)); margin:0 auto;
+  padding:calc(140 * var(--u)) calc(40 * var(--u)) calc(80 * var(--u))}
+.pr-head{display:flex; align-items:flex-end; justify-content:space-between;
+  gap:calc(20 * var(--u)); flex-wrap:wrap; margin-bottom:calc(22 * var(--u))}
+.pr-title{font-size:calc(30 * var(--u)); font-weight:600; letter-spacing:calc(2 * var(--u)); color:#fff}
+.pr-sub{margin-top:calc(6 * var(--u)); font-size:calc(13.5 * var(--u));
+  letter-spacing:calc(1.5 * var(--u)); color:rgba(190,240,255,.75)}
+.pr-course{display:flex; gap:calc(10 * var(--u)); flex-wrap:wrap}
+.pr-course-btn{height:calc(40 * var(--u)); padding:0 calc(18 * var(--u)); border-radius:calc(20 * var(--u));
+  border:calc(1 * var(--u)) solid rgba(255,255,255,.22); background:rgba(255,255,255,.08);
+  color:rgba(255,255,255,.85); font-size:calc(14 * var(--u)); font-family:var(--font-body);
+  cursor:pointer; transition:background .18s, border-color .18s, color .18s}
+.pr-course-btn:hover{background:rgba(255,255,255,.16)}
+.pr-course-btn.on{background:rgba(121,220,232,.18); border-color:rgba(121,220,232,.5);
+  color:var(--cyan); font-weight:600}
+.pr-question{font-size:calc(17 * var(--u)); line-height:1.75; color:#fff;
+  margin-bottom:calc(18 * var(--u))}
+.pr-options{display:grid; gap:calc(10 * var(--u))}
+.pr-option{width:100%; display:flex; align-items:flex-start; gap:calc(12 * var(--u));
+  padding:calc(14 * var(--u)) calc(16 * var(--u)); border-radius:calc(14 * var(--u));
+  border:calc(1 * var(--u)) solid rgba(255,255,255,.16); background:rgba(255,255,255,.06);
+  color:rgba(255,255,255,.92); font-size:calc(15 * var(--u)); line-height:1.6;
+  text-align:left; cursor:pointer; font-family:var(--font-body);
+  transition:background .16s, border-color .16s}
+.pr-option:hover{background:rgba(121,220,232,.10); border-color:rgba(121,220,232,.38)}
+.pr-option.on{background:rgba(121,220,232,.16); border-color:var(--cyan)}
+.pr-option:disabled{cursor:default}
+.pr-key{display:inline-flex; align-items:center; justify-content:center; flex:none;
+  width:calc(26 * var(--u)); height:calc(26 * var(--u)); border-radius:50%;
+  background:rgba(121,220,232,.16); color:var(--cyan); font-weight:700;
+  font-size:calc(13 * var(--u))}
+.pr-result{margin-top:calc(18 * var(--u)); padding:calc(16 * var(--u)) calc(18 * var(--u));
+  border-radius:calc(14 * var(--u)); border:calc(1 * var(--u)) solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.05); font-size:calc(14.5 * var(--u)); line-height:1.7;
+  color:rgba(255,255,255,.9)}
+.pr-result.good{background:rgba(110,231,160,.12); border-color:rgba(110,231,160,.34)}
+.pr-result.bad{background:rgba(255,120,120,.12); border-color:rgba(255,120,120,.34)}
+.pr-loading{padding:calc(40 * var(--u)) 0; text-align:center;
+  color:rgba(255,255,255,.5); font-size:calc(14 * var(--u))}
+.pr-actions{display:flex; gap:calc(12 * var(--u)); flex-wrap:wrap; margin-top:calc(18 * var(--u))}
+.pr-btn{height:calc(46 * var(--u)); padding:0 calc(24 * var(--u)); border-radius:calc(23 * var(--u));
+  border:calc(1 * var(--u)) solid rgba(255,255,255,.22); background:rgba(255,255,255,.08);
+  color:rgba(255,255,255,.9); font-size:calc(14.5 * var(--u)); font-weight:600;
+  font-family:var(--font-body); cursor:pointer; transition:background .18s}
+.pr-btn:hover{background:rgba(255,255,255,.16)}
+.pr-btn.primary{background:linear-gradient(180deg,#ffffff 0%,#d6e8f8 30%,#d9ecfe 100%);
+  color:var(--btn-ink); border:0}
+.pr-btn:disabled{opacity:.45; cursor:not-allowed}
+html.theme-bamboo .view-practice,html.theme-taro .view-practice{
+  background:linear-gradient(180deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,.74) 100%)}
+html.theme-bamboo .pr-title,html.theme-taro .pr-title{color:rgba(var(--th-ink),1)}
+html.theme-bamboo .pr-sub,html.theme-taro .pr-sub{color:rgba(var(--th-acc-ink),.86)}
+html.theme-bamboo .pr-course-btn,html.theme-taro .pr-course-btn,
+html.theme-bamboo .pr-btn,html.theme-taro .pr-btn{
+  border-color:rgba(var(--th-ink),.21); background:rgba(var(--th-ink),.084); color:rgba(var(--th-ink),.95)}
+html.theme-bamboo .pr-course-btn.on,html.theme-taro .pr-course-btn.on{
+  background:rgba(var(--th-acc),.144); border-color:rgba(var(--th-acc),.58)}
+html.theme-bamboo .pr-question,html.theme-taro .pr-question{color:rgba(var(--th-ink),1)}
+html.theme-bamboo .pr-option,html.theme-taro .pr-option{
+  border-color:rgba(var(--th-ink),.17); background:rgba(var(--th-ink),.06); color:rgba(var(--th-ink),.92)}
+html.theme-bamboo .pr-option:hover,html.theme-taro .pr-option:hover{
+  background:rgba(var(--th-acc),.10); border-color:rgba(var(--th-acc),.4)}
+html.theme-bamboo .pr-option.on,html.theme-taro .pr-option.on{
+  background:rgba(var(--th-acc),.16); border-color:rgba(var(--th-acc),.6)}
+html.theme-bamboo .pr-result,html.theme-taro .pr-result{
+  border-color:rgba(var(--th-ink),.15); background:rgba(var(--th-ink),.05); color:rgba(var(--th-ink),.9)}
+html.theme-bamboo .pr-result.good,html.theme-taro .pr-result.good{
+  background:rgba(26,104,62,.12); border-color:rgba(26,104,62,.34)}
+html.theme-bamboo .pr-result.bad,html.theme-taro .pr-result.bad{
+  background:rgba(166,50,50,.12); border-color:rgba(166,50,50,.34)}
+html.theme-bamboo .pr-loading,html.theme-taro .pr-loading{color:rgba(var(--th-ink),.6)}
+@media (max-width:579px), (max-height:620px){
+  .pr-wrap{padding:calc(108 * var(--u)) calc(18 * var(--u)) calc(64 * var(--u))}
+  .pr-title{font-size:calc(24 * var(--u))}
+}
 /*@@THEME-SECTION-START@@*/
 /* ============ 网页整体换肤（默认深海蓝 + 两套浅色晕染主题） ============ */
 /* 设计原则：四色整体渐变晕染成浅色水彩底，墨色文字 + 奶白玻璃；
@@ -1899,6 +1982,7 @@ html.theme-bamboo :focus-visible,html.theme-taro :focus-visible{outline-color:rg
 .stage.is-charts .copy,.stage.is-charts .hint,
 .stage.is-mistakes .copy,.stage.is-mistakes .hint,
 .stage.is-qa .copy,.stage.is-qa .hint{display:none}
+.stage.is-practice .copy,.stage.is-practice .hint{display:none}
 /* mine focus + responsive */
 .auth-tab:focus-visible,.pill-primary:focus-visible,.about-item:focus-visible,
 .ri-btn:focus-visible,.btn-logout:focus-visible,.modal-close:focus-visible,
@@ -2286,7 +2370,7 @@ html.theme-bamboo :focus-visible,html.theme-taro :focus-visible{outline-color:rg
       <div class="col cta">
         <button class="label label-l" type="button" aria-label="上一章"><span class="lno">拾</span><span class="lnm">综合应用与课程设计</span></button>
         <button class="label label-r" type="button" aria-label="下一章"><span class="lno">壹</span><span class="lnm">绪论</span></button>
-        <a href="#">开始学习</a>
+        <a href="#" id="start-learn">开始学习</a>
       </div>
     </div>
     <div class="view view-mine" id="view-mine" aria-hidden="true">
@@ -2545,6 +2629,34 @@ html.theme-bamboo :focus-visible,html.theme-taro :focus-visible{outline-color:rg
               <span class="qa-link" id="qa-link" hidden>去「错题巩固」查看 →</span>
             </section>
           </section>
+        </div>
+      </div>
+    </div>
+    <div class="view view-practice" id="view-practice" aria-hidden="true">
+      <div class="pr-wrap">
+        <div class="pr-head">
+          <div>
+            <div class="pr-title">练习模式</div>
+            <div class="pr-sub">选择课程，逐题精练 · 提交后即时判定</div>
+          </div>
+          <div class="pr-course" id="pr-course">
+            <button class="pr-course-btn on" type="button" data-pr-course="cpp">C++程序设计</button>
+            <button class="pr-course-btn" type="button" data-pr-course="data-structure">数据结构</button>
+          </div>
+        </div>
+        <div class="card pr-card">
+          <div class="pr-loading" id="pr-loading" hidden>正在加载题目…</div>
+          <div id="pr-exercise" hidden>
+            <div class="pr-question" id="pr-question"></div>
+            <div class="pr-options" id="pr-options"></div>
+          </div>
+          <div class="pr-result" id="pr-result" hidden></div>
+          <div class="pr-actions">
+            <button class="pr-btn primary" id="pr-submit" type="button" disabled>提交答案</button>
+            <button class="pr-btn" id="pr-next" type="button" disabled>下一题</button>
+            <button class="pr-btn" id="pr-similar" type="button" disabled>同类题巩固</button>
+            <button class="pr-btn" id="pr-back" type="button">返回首页</button>
+          </div>
         </div>
       </div>
     </div>
@@ -3419,13 +3531,15 @@ var navAll=document.querySelectorAll('.links a');
 function setView(v){
   currentView=v;
   var isMine=v==='mine', isProg=v==='progress', isSug=v==='suggest',
-      isCharts=v==='charts', isMk=v==='mistakes', isQa=v==='qa';
+      isCharts=v==='charts', isMk=v==='mistakes', isQa=v==='qa',
+      isPractice=v==='practice';
   stageEl.classList.toggle('is-mine',isMine);
   stageEl.classList.toggle('is-progress',isProg);
   stageEl.classList.toggle('is-suggest',isSug);
   stageEl.classList.toggle('is-charts',isCharts);
   stageEl.classList.toggle('is-mistakes',isMk);
   stageEl.classList.toggle('is-qa',isQa);
+  stageEl.classList.toggle('is-practice',isPractice);
   viewMine.classList.toggle('is-open',isMine);
   viewMine.setAttribute('aria-hidden',isMine?'false':'true');
   viewProgress.classList.toggle('is-open',isProg);
@@ -3438,6 +3552,10 @@ function setView(v){
   viewMistakes.setAttribute('aria-hidden',isMk?'false':'true');
   viewQa.classList.toggle('is-open',isQa);
   viewQa.setAttribute('aria-hidden',isQa?'false':'true');
+  if(typeof viewPractice!=='undefined'&&viewPractice){
+    viewPractice.classList.toggle('is-open',isPractice);
+    viewPractice.setAttribute('aria-hidden',isPractice?'false':'true');
+  }
   if(isProg) progRender();
   if(isMine) renderMine();
   if(isSug){ sugRender(); dmnkStart(); }
@@ -3445,8 +3563,9 @@ function setView(v){
   if(isCharts) chRender();
   if(isMk) mkLoadFromServer();
   if(isQa) qaInit();
+  if(isPractice) prLoad(false);
   var openedView=isMine?viewMine:(isProg?viewProgress:(isSug?viewSuggest:
-                  (isCharts?viewCharts:(isMk?viewMistakes:(isQa?viewQa:null)))));
+                  (isCharts?viewCharts:(isMk?viewMistakes:(isQa?viewQa:(isPractice?viewPractice:null))))));
   if(openedView&&openedView.scrollTop) openedView.scrollTop=0;
   for(var i=0;i<navAll.length;i++){
     var l=navAll[i];
@@ -7221,10 +7340,169 @@ qaUpdateCount();
 bindDrops(viewQa);
 bindTouchFx(viewQa);
 
+/* ================= 开始学习 · 练习模式（GET /api/recommendations + POST /api/exercises/submit） ================= */
+var viewPractice=document.getElementById('view-practice');
+var prCourseEl=document.getElementById('pr-course');
+var prLoadingEl=document.getElementById('pr-loading');
+var prExerciseEl=document.getElementById('pr-exercise');
+var prQuestionEl=document.getElementById('pr-question');
+var prOptionsEl=document.getElementById('pr-options');
+var prResultEl=document.getElementById('pr-result');
+var prSubmitBtn=document.getElementById('pr-submit');
+var prNextBtn=document.getElementById('pr-next');
+var prSimilarBtn=document.getElementById('pr-similar');
+var prBackBtn=document.getElementById('pr-back');
+var prState={course:'cpp',items:[],used:[],current:null,answer:null,
+             lastKnowledgePoint:'',loading:false,submitting:false,token:0};
+
+function prSetCourse(id){
+  prState.course=id;
+  var btns=prCourseEl.querySelectorAll('[data-pr-course]');
+  for(var i=0;i<btns.length;i++){
+    btns[i].classList.toggle('on',btns[i].getAttribute('data-pr-course')===id);
+  }
+}
+function prPickUnused(){
+  for(var i=0;i<prState.items.length;i++){
+    if(prState.used.indexOf(prState.items[i].id)<0) return prState.items[i];
+  }
+  return null;
+}
+function prLoading(show,msg){
+  prLoadingEl.hidden=!show;
+  if(show) prLoadingEl.textContent=msg||'正在加载题目…';
+}
+async function prLoad(useKnowledgePoint){
+  var token=++prState.token;
+  prState.loading=true; prState.answer=null; prState.current=null;
+  prExerciseEl.hidden=true;
+  prResultEl.hidden=true; prResultEl.className='pr-result'; prResultEl.innerHTML='';
+  prSubmitBtn.disabled=true; prNextBtn.disabled=true; prSimilarBtn.disabled=true;
+  prLoading(true);
+  var url=MK_API_RECOMMENDATIONS+'?course_id='+encodeURIComponent(prState.course);
+  if(useKnowledgePoint&&prState.lastKnowledgePoint){
+    url+='&knowledge_point='+encodeURIComponent(prState.lastKnowledgePoint);
+  }
+  try{
+    var resp=await fetch(url,{method:'GET',headers:{'Accept':'application/json'}});
+    var data=await resp.json();
+    if(!resp.ok) throw new Error((data&&data.message)||('HTTP '+resp.status));
+    if(token!==prState.token) return;
+    var items=(data&&Array.isArray(data.items))?data.items:[];
+    prState.items=items;
+    if(!items.length){
+      prLoading(false);
+      prResultEl.className='pr-result bad';
+      prResultEl.innerHTML='<strong>暂无可用题目</strong><br>当前课程/知识点下没有找到题目。';
+      prResultEl.hidden=false;
+      return;
+    }
+    var ex=prPickUnused();
+    if(!ex){ prState.used=[]; ex=items[0]; }
+    prState.used.push(ex.id);
+    prState.lastKnowledgePoint=ex.knowledge_point||'';
+    prState.current=ex;
+    prRenderExercise(ex);
+  }catch(err){
+    if(token!==prState.token) return;
+    prLoading(false);
+    prResultEl.className='pr-result bad';
+    prResultEl.innerHTML='<strong>题目加载失败</strong><br>'+mkEsc(String((err&&err.message)||'请确认后端已启动（127.0.0.1:8080）'));
+    prResultEl.hidden=false;
+  }finally{
+    prState.loading=false;
+  }
+}
+function prRenderExercise(ex){
+  prLoading(false);
+  prQuestionEl.textContent=ex.question||'（无题目内容）';
+  var options=Array.isArray(ex.options)?ex.options:[];
+  var html='';
+  for(var i=0;i<options.length;i++){
+    var o=options[i]||{};
+    html+='<button type="button" class="pr-option" data-pr-answer="'+mkEsc(o.key||'')+'">'
+      +'<span class="pr-key">'+mkEsc(o.key||'')+'</span>'
+      +'<span>'+mkEsc(o.text||'')+'</span></button>';
+  }
+  prOptionsEl.innerHTML=html;
+  prExerciseEl.hidden=false;
+  prResultEl.hidden=true; prResultEl.className='pr-result'; prResultEl.innerHTML='';
+  prSubmitBtn.disabled=true; prNextBtn.disabled=true; prSimilarBtn.disabled=true;
+}
+function prSelect(key){
+  if(prState.submitting) return;
+  prState.answer=key;
+  var opts=prOptionsEl.querySelectorAll('[data-pr-answer]');
+  for(var i=0;i<opts.length;i++){
+    opts[i].classList.toggle('on',opts[i].getAttribute('data-pr-answer')===key);
+  }
+  prSubmitBtn.disabled=false;
+}
+async function prSubmit(){
+  if(prState.submitting||!prState.current||!prState.answer) return;
+  prState.submitting=true;
+  prSubmitBtn.disabled=true; prSubmitBtn.textContent='提交中…';
+  try{
+    var resp=await fetch(MK_API_SUBMIT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({exercise_id:prState.current.id,answer:prState.answer})
+    });
+    var data=await resp.json();
+    if(!resp.ok||data.status!=='ok'){ throw new Error((data&&data.message)||('HTTP '+resp.status)); }
+    prShowResult(data);
+  }catch(err){
+    prState.submitting=false;
+    prSubmitBtn.disabled=false; prSubmitBtn.textContent='提交答案';
+    prResultEl.className='pr-result bad';
+    prResultEl.innerHTML='<strong>提交失败</strong><br>'+mkEsc(String((err&&err.message)||'请稍后重试'));
+    prResultEl.hidden=false;
+  }
+}
+function prShowResult(data){
+  prState.submitting=false;
+  prSubmitBtn.disabled=true; prSubmitBtn.textContent='提交答案';
+  var ok=!!data.correct;
+  prResultEl.className='pr-result '+(ok?'good':'bad');
+  prResultEl.innerHTML='<strong>'+(ok?'回答正确':'回答错误')+'</strong><br>'
+    +'正确答案：'+mkEsc(data.correct_answer||'—')+'<br>'
+    +'解析：'+mkEsc(data.explanation||'暂无解析');
+  prResultEl.hidden=false;
+  var opts=prOptionsEl.querySelectorAll('[data-pr-answer]');
+  for(var i=0;i<opts.length;i++){ opts[i].disabled=true; }
+  prNextBtn.disabled=false; prSimilarBtn.disabled=false;
+  toast(ok?'回答正确，继续下一题吧':'回答错误，看看解析');
+}
+prOptionsEl.addEventListener('click',function(e){
+  var b=e.target.closest('[data-pr-answer]');
+  if(b) prSelect(b.getAttribute('data-pr-answer'));
+});
+prCourseEl.addEventListener('click',function(e){
+  var b=e.target.closest('[data-pr-course]');
+  if(!b) return;
+  prSetCourse(b.getAttribute('data-pr-course'));
+  prState.used=[]; prState.lastKnowledgePoint='';
+  prLoad(false);
+});
+prSubmitBtn.addEventListener('click',prSubmit);
+prNextBtn.addEventListener('click',function(){ prLoad(false); });
+prSimilarBtn.addEventListener('click',function(){ prLoad(true); });
+prBackBtn.addEventListener('click',function(){ setView('hero'); });
+var startLearnEl=document.getElementById('start-learn');
+if(startLearnEl){
+  startLearnEl.addEventListener('click',function(e){
+    if(e) e.preventDefault();
+    prSetCourse(prState.course);
+    setView('practice');
+  });
+}
+bindDrops(viewPractice);
+bindTouchFx(viewPractice);
+
 /* ================= 深链：根据 URL hash 直接打开对应页面 ================= */
 (function(){
   var MAP={hero:'hero',train:'hero',progress:'progress',charts:'charts',
-           mistakes:'mistakes',suggest:'suggest',mine:'mine',qa:'qa'};
+           mistakes:'mistakes',suggest:'suggest',mine:'mine',qa:'qa',practice:'practice'};
   function applyHash(){
     var h=String(location.hash||'').replace(/^#/,'').toLowerCase();
     if(MAP[h]) setView(MAP[h]);
