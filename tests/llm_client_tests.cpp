@@ -88,6 +88,10 @@ int main() {
         check(LlmConfig::load(path).api_key == "alias-test-key", "DEEPSEEK_API_KEY alias supported");
         SetEnvironmentVariableW(L"DEEPSEEK_API_KEY", nullptr);
         check(LlmConfig::load(path).api_key == "file-test-key", "existing .env key works without Python");
+        SetEnvironmentVariableW(L"LLM_MODEL", nullptr);
+        SetEnvironmentVariableW(L"DEEPSEEK_MODEL", L"remote-compatible-model");
+        check(LlmConfig::load(path).model == "remote-compatible-model", "remote DEEPSEEK_MODEL setting remains supported");
+        SetEnvironmentVariableW(L"DEEPSEEK_MODEL", nullptr);
         std::filesystem::remove(path);
     } catch (const std::exception &error) {
         std::cerr << "FAIL: " << error.what() << '\n';

@@ -11,7 +11,7 @@ try { $portCheck.Start() } catch { throw 'Port 8080 is occupied. Stop the runnin
 finally { $portCheck.Stop() }
 $child = $null
 $prior = @{}
-foreach ($name in @('LLM_API_KEY','DEEPSEEK_API_KEY','LLM_API_URL','LLM_MODEL','LLM_TIMEOUT_SECONDS','LLM_THINKING')) {
+foreach ($name in @('LLM_API_KEY','DEEPSEEK_API_KEY','LLM_API_URL','LLM_MODEL','DEEPSEEK_MODEL','LLM_TIMEOUT_SECONDS','LLM_THINKING')) {
     $prior[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
     [Environment]::SetEnvironmentVariable($name, $null, 'Process')
 }

@@ -83,7 +83,11 @@ LlmConfig LlmConfig::load(const std::filesystem::path &env_path) {
         return found == file.end() ? fallback : found->second;
     };
     config.api_url = setting(L"LLM_API_URL", config.api_url);
-    config.model = setting(L"LLM_MODEL", config.model);
+    auto model = trim(environment(L"LLM_MODEL"));
+    if (model.empty()) model = trim(environment(L"DEEPSEEK_MODEL"));
+    if (model.empty()) model = file["LLM_MODEL"];
+    if (model.empty()) model = file["DEEPSEEK_MODEL"];
+    if (!model.empty()) config.model = model;
     config.thinking = setting(L"LLM_THINKING", config.thinking);
     // Both names work. Non-empty process variables take priority over .env.
     config.api_key = trim(environment(L"LLM_API_KEY"));

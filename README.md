@@ -59,7 +59,7 @@ LLM_THINKING=disabled
 
 也兼容进程环境变量 `DEEPSEEK_API_KEY`。密钥优先级为：非空进程 `LLM_API_KEY` →
 非空进程 `DEEPSEEK_API_KEY` → `.env` 的 `LLM_API_KEY` → `.env` 的 `DEEPSEEK_API_KEY`。
-其他设置优先使用非空进程环境变量，再读取 `.env`。
+模型名称同样兼容 `DEEPSEEK_MODEL`：非空进程 LLM_MODEL → 非空进程 DEEPSEEK_MODEL → .env 的 LLM_MODEL → .env 的 DEEPSEEK_MODEL → 默认模型。其他设置优先使用非空进程环境变量，再读取 `.env`。
 修改配置后重启后端。密钥不得提交，`.env` 已被 Git 忽略。
 
 超时配置支持 1—45 秒；WinHTTP 使用阶段超时，程序还会检查响应读取预算。
