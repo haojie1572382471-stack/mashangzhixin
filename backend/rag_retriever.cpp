@@ -74,6 +74,7 @@ std::string normalize_question(std::string value) {
     // relevant to the same query.
     static const std::vector<std::string> removable_phrases = {
         "c++", "cpp", "数据结构", "程序设计",
+        "是不是", "会有什么后果", "有什么后果", "需要",
         "有什么作用", "有什么区别", "有哪些区别", "有何区别", "有哪些",
         "有什么不同", "是什么意思", "什么是", "是什么", "怎么样", "是多少",
         "请问", "请解释", "请说明", "为什么", "如何", "怎么", "怎样",

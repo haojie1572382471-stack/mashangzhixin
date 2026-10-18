@@ -4,6 +4,7 @@
 #include "rag_retriever.h"
 #include "llm_client.h"
 #include "learning_progress.h"
+#include "auth_store.h"
 
 #include <algorithm>
 #include <cctype>
@@ -11,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <limits>
 #include <random>
 #include <set>
 #include <sstream>
@@ -27,6 +29,7 @@ struct WrongQuestion {
     std::string answer;
     std::string knowledge_point;
     std::string status;
+    std::string user_id = "guest";
 };
 
 struct Choice {
@@ -119,114 +122,12 @@ std::string build_rag_response_json(
     return body;
 }
 
-bool get_json_value_position(const std::string &body,
-                             const std::string &key,
-                             std::size_t &value_position) {
-    const std::string key_token = "\"" + key + "\"";
-    const std::size_t key_position = body.find(key_token);
-    if (key_position == std::string::npos) {
-        return false;
-    }
-
-    value_position = body.find(':', key_position + key_token.size());
-    if (value_position == std::string::npos) {
-        return false;
-    }
-
-    ++value_position;
-    while (value_position < body.size() &&
-           std::isspace(static_cast<unsigned char>(body[value_position]))) {
-        ++value_position;
-    }
-
-    return value_position < body.size();
+// Parse JSON structurally: escaped Unicode and nested field names cannot confuse fields.
+bool get_json_string(const std::string& body,const std::string& key,std::string& value){
+    try{auto o=winrt::Windows::Data::Json::JsonObject::Parse(winrt::to_hstring(body));value=winrt::to_string(o.GetNamedString(winrt::to_hstring(key)));return true;}catch(...){return false;}
 }
-
-bool get_json_string(const std::string &body,
-                     const std::string &key,
-                     std::string &value) {
-    std::size_t value_position = 0;
-    if (!get_json_value_position(body, key, value_position) ||
-        body[value_position] != '"') {
-        return false;
-    }
-
-    ++value_position;
-    value.clear();
-
-    while (value_position < body.size()) {
-        const char character = body[value_position++];
-        if (character == '"') {
-            return true;
-        }
-
-        if (character != '\\') {
-            value += character;
-            continue;
-        }
-
-        if (value_position >= body.size()) {
-            return false;
-        }
-
-        const char escaped_character = body[value_position++];
-        switch (escaped_character) {
-        case '"':
-        case '\\':
-        case '/':
-            value += escaped_character;
-            break;
-        case 'b':
-            value += '\b';
-            break;
-        case 'f':
-            value += '\f';
-            break;
-        case 'n':
-            value += '\n';
-            break;
-        case 'r':
-            value += '\r';
-            break;
-        case 't':
-            value += '\t';
-            break;
-        default:
-            return false;
-        }
-    }
-
-    return false;
-}
-
-bool get_json_int(const std::string &body, const std::string &key, int &value) {
-    std::size_t value_position = 0;
-    if (!get_json_value_position(body, key, value_position)) {
-        return false;
-    }
-
-    std::size_t end_position = value_position;
-    if (body[end_position] == '-') {
-        ++end_position;
-    }
-
-    const std::size_t digit_start = end_position;
-    while (end_position < body.size() &&
-           std::isdigit(static_cast<unsigned char>(body[end_position]))) {
-        ++end_position;
-    }
-
-    if (end_position == digit_start) {
-        return false;
-    }
-
-    try {
-        value = std::stoi(body.substr(value_position, end_position - value_position));
-    } catch (...) {
-        return false;
-    }
-
-    return true;
+bool get_json_int(const std::string& body,const std::string& key,int& value){
+    try{auto o=winrt::Windows::Data::Json::JsonObject::Parse(winrt::to_hstring(body));auto n=o.GetNamedNumber(winrt::to_hstring(key));if(!std::isfinite(n)||n<std::numeric_limits<int>::min()||n>std::numeric_limits<int>::max()||std::floor(n)!=n)return false;value=static_cast<int>(n);return true;}catch(...){return false;}
 }
 
 bool is_supported_course(const std::string &course_id) {
@@ -239,7 +140,7 @@ bool is_supported_status(const std::string &status) {
 
 void append_wrong_question_json(std::string &body,
                                 const WrongQuestion &wrong_question) {
-    body += "{\"id\":" + std::to_string(wrong_question.id) +
+    body += "{\"user_id\":\"" + escape_json_string(wrong_question.user_id) + "\",\"id\":" + std::to_string(wrong_question.id) +
             ",\"course_id\":\"" +
             escape_json_string(wrong_question.course_id) +
             "\",\"question\":\"" +
@@ -386,6 +287,7 @@ bool parse_wrong_questions_json(
 
     for (const std::string &object : item_objects) {
         WrongQuestion item{};
+        get_json_string(object, "user_id", item.user_id);
         if (!get_json_int(object, "id", item.id) || item.id < 1 ||
             !get_json_string(object, "course_id", item.course_id) ||
             !get_json_string(object, "question", item.question) ||
@@ -1127,6 +1029,8 @@ int main(int argc, char **argv) {
         return 1;
     }
     std::cout << (llm.configured() ? "C++ model client configured." : "Model key not configured; retrieval fallback enabled.") << std::endl;
+    mashangzhixin::AuthStore auth("data/accounts.json");
+    if (!auth.load()) { std::cerr << "Account file is invalid; restore it before starting." << std::endl; return 1; }
     httplib::Server server;
     server.set_payload_max_length(65536);
     // Serve only the frontend directory; .env and runtime data stay private.
@@ -1184,7 +1088,35 @@ int main(int argc, char **argv) {
     server.set_default_headers({
         {"Access-Control-Allow-Origin", "http://127.0.0.1:5500"},
         {"Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS"},
-        {"Access-Control-Allow-Headers", "Content-Type"}});
+        {"Access-Control-Allow-Headers", "Content-Type"},
+        {"Access-Control-Allow-Credentials", "true"}});
+
+    // Cookies identify users. Query/body user_id is never an authorization credential.
+    server.set_pre_routing_handler([&](const httplib::Request& req, httplib::Response& res) {
+        if (req.path.rfind("/api/", 0) != 0) return httplib::Server::HandlerResponse::Unhandled;
+        res.set_header("Cache-Control", "no-store");
+        const auto origin = req.get_header_value("Origin");
+        if (!origin.empty() && origin != "http://127.0.0.1:8080" && origin != "http://127.0.0.1:5500") {
+            mashangzhixin::AuthStore::reply(res,403,"不允许此来源访问接口");
+            return httplib::Server::HandlerResponse::Handled;
+        }
+        if (req.method == "OPTIONS" || req.path == "/api/health" || req.path == "/api/auth/login" || req.path == "/api/auth/register" || req.path == "/api/auth/logout") return httplib::Server::HandlerResponse::Unhandled;
+        const auto who=auth.identity(req);
+        if (!who.valid) { res.set_header("Set-Cookie","mzx_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"); mashangzhixin::AuthStore::reply(res,401,"登录已过期，请重新登录"); return httplib::Server::HandlerResponse::Handled; }
+        std::string declared;
+        if(req.has_param("user_id")) declared=req.get_param_value("user_id");
+        if(!req.body.empty()) {
+            try { auto obj=winrt::Windows::Data::Json::JsonObject::Parse(winrt::to_hstring(req.body));
+                if(obj.HasKey(L"user_id")) declared=winrt::to_string(obj.GetNamedString(L"user_id"));
+            } catch(...) { mashangzhixin::AuthStore::reply(res,400,"请求须为有效 JSON");return httplib::Server::HandlerResponse::Handled; }
+        }
+        if(!declared.empty() && declared!=who.name){mashangzhixin::AuthStore::reply(res,403,"不能访问其他用户的数据");return httplib::Server::HandlerResponse::Handled;}
+        return httplib::Server::HandlerResponse::Unhandled;
+    });
+    server.Post("/api/auth/register",[&](const httplib::Request& req,httplib::Response& res){auth.login(req,res,true);});
+    server.Post("/api/auth/login",[&](const httplib::Request& req,httplib::Response& res){auth.login(req,res,false);});
+    server.Post("/api/auth/logout",[&](const httplib::Request& req,httplib::Response& res){auth.logout(req,res);});
+    server.Get("/api/auth/me",[&](const httplib::Request& req,httplib::Response& res){auth.info(auth.identity(req),res);});
 
     server.Options(R"(.*)",
                    [](const httplib::Request &, httplib::Response &response) {
@@ -1265,7 +1197,8 @@ int main(int argc, char **argv) {
                 });
 
     server.Get("/api/progress", [&](const httplib::Request& request, httplib::Response& response) {
-        const auto user = request.has_param("user_id") ? request.get_param_value("user_id") : "guest";
+        const auto who = auth.identity(request);
+        const auto user = who.id;
         const auto course = request.has_param("course_id")
             ? request.get_param_value("course_id")
             : "";
@@ -1277,7 +1210,7 @@ int main(int argc, char **argv) {
         std::set<std::string> topics;
         for (const auto& exercise : exercise_bank()) if (exercise.course_id == course) topics.insert(exercise.knowledge_point);
         response.set_header("Cache-Control", "no-store");
-        response.set_content(learning.progress_json(user, course, topics), "application/json; charset=utf-8");
+        response.set_content(learning.progress_json(user, course, topics, who.name), "application/json; charset=utf-8");
     });
     server.Get("/api/recommendations",
                [&](const httplib::Request &request, httplib::Response &response) {
@@ -1298,7 +1231,7 @@ int main(int argc, char **argv) {
                        return;
                    }
 
-                   const std::string user = request.has_param("user_id") ? request.get_param_value("user_id") : "guest";
+                   const std::string user = auth.identity(request).id;
                    if (!mashangzhixin::LearningProgress::valid_user(user)) {
                        response.status = 400;
                        response.set_content(R"({"status":"error","message":"Invalid user_id"})", "application/json; charset=utf-8");
@@ -1401,7 +1334,7 @@ int main(int argc, char **argv) {
                     }
                     const bool correct = selected_answer == target->correct_answer;
                     mashangzhixin::LearningAttempt attempt;
-                    attempt.user_id=user;attempt.course_id=target->course_id;attempt.knowledge_point=target->knowledge_point;
+                    attempt.user_id=auth.identity(request).id;attempt.course_id=target->course_id;attempt.knowledge_point=target->knowledge_point;
                     attempt.exercise_id=target->id;attempt.selected_answer=selected_answer;attempt.correct=correct;attempt.submission_id=token;
                     std::size_t attempt_id=0;
                     const auto saved=learning.record(std::move(attempt),attempt_id);
@@ -1425,6 +1358,27 @@ int main(int argc, char **argv) {
 
                     response.set_content(body, "application/json; charset=utf-8");
                 });
+
+    server.Post("/api/exercises/coach",[&](const httplib::Request& request,httplib::Response& response){
+        int id=0;if(!get_json_int(request.body,"exercise_id",id)){mashangzhixin::AuthStore::reply(response,400,"缺少题目编号");return;}
+        const Exercise* target=nullptr;for(const auto& q:exercise_bank())if(q.id==id){target=&q;break;}
+        mashangzhixin::LearningAttempt attempt;
+        if(!target||!learning.latest(auth.identity(request).id,id,attempt)){mashangzhixin::AuthStore::reply(response,404,"请先完成这道题再查看辅导");return;}
+        auto result=rag_retriever.answer(target->course_id,target->knowledge_point,3);
+        std::string context="题目："+target->question+"\n";
+        for(const auto& option:target->options)context+=option.key+". "+option.text+"\n";
+        context+="学生选择："+attempt.selected_answer+"\n标准答案："+target->correct_answer+"\n标准解析："+target->explanation+"\n课程资料：\n"+result.answer;
+        const std::string prompt="请依据题目、学生所选选项和课程资料，按【可能的误区】【对比讲解】【复习步骤】【自检问题】辅导。只能说可能的误区，不能凭一次作答断言能力；正确答案以提供的标准答案为准，不另编选择题或题号。";
+        result.answer="正确答案："+target->correct_answer+"\n解析："+target->explanation+"\n复习步骤：回顾“"+target->knowledge_point+"”的定义，逐项比较选项，再完成一道不同题目验证理解。";
+        result.mode="retrieval";result.notice="当前显示题库解析与复习建议；掌握度是练习表现估计。";
+        if(!result.sources.empty()){
+            auto generated=llm.generate(target->course_id,prompt,context);
+            if(generated.generated){result.answer=generated.answer;result.mode="generated";result.notice="AI 辅导基于本次选择与课程资料；误区为推测，请以标准答案和原文为准。";}
+        }
+        int next=0;for(const auto& q:exercise_bank())if(q.id!=id&&q.course_id==target->course_id&&q.knowledge_point==target->knowledge_point){next=q.id;break;}
+        auto json=build_rag_response_json(result);json.pop_back();json+=",\"verification_exercise_id\":"+std::to_string(next)+"}";
+        response.set_content(json,"application/json; charset=utf-8");
+    });
 
     server.Post("/api/wrong-questions",
                 [&](const httplib::Request &request,
@@ -1466,7 +1420,7 @@ int main(int argc, char **argv) {
                          question,
                          answer,
                          knowledge_point,
-                         "待复习"});
+                         "待复习", auth.identity(request).id});
                     ++next_wrong_question_id;
 
                     std::string save_error;
@@ -1527,7 +1481,7 @@ int main(int argc, char **argv) {
 
             std::lock_guard<std::mutex> lock(wrong_questions_mutex);
             for (WrongQuestion &wrong_question : wrong_questions) {
-                if (wrong_question.id == id) {
+                if (wrong_question.id == id && wrong_question.user_id == auth.identity(request).id) {
                     const std::string previous_status = wrong_question.status;
                     wrong_question.status = new_status;
 
@@ -1562,21 +1516,17 @@ int main(int argc, char **argv) {
         });
 
     server.Get("/api/wrong-questions",
-               [&](const httplib::Request &, httplib::Response &response) {
+               [&](const httplib::Request &request, httplib::Response &response) {
                    std::lock_guard<std::mutex> lock(wrong_questions_mutex);
                    std::string body = R"({"items":[)";
 
-                   for (std::size_t index = 0;
-                        index < wrong_questions.size();
-                        ++index) {
-                       if (index > 0) {
-                           body += ',';
-                       }
-
-                       const WrongQuestion &wrong_question =
-                           wrong_questions[index];
-
-                       append_wrong_question_json(body, wrong_question);
+                   bool first = true;
+                   const auto owner=auth.identity(request).id;
+                   for (const auto& wrong_question : wrong_questions) {
+                       if(wrong_question.user_id != owner) continue;
+                       if(!first) body += ',';
+                       first=false;
+                       append_wrong_question_json(body,wrong_question);
                    }
 
                    body += "]}";

@@ -30,3 +30,7 @@ data/wrong_questions.json.bak
 data/learning_attempts.json
 data/learning_attempts.json.tmp
 data/learning_attempts.json.bak
+
+# Private server accounts
+data/accounts.json
+data/accounts.json.tmp

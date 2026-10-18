@@ -1,125 +1,123 @@
 # 码上知新
 
-面向 C++ 与数据结构学习的课程答疑、错题整理与复习助手。
+面向 C++ 与数据结构学习的 Web 复习助手：练习、记录、发现薄弱知识点、基于课程资料讲解，再用不同题目验证理解。
 
-## 工作目录与课程标识
+## 已实现
 
-本机仓库：`D:\Program Files\码上新智\mashangzhixin`。
-导出文档：`D:\Program Files\码上新智\文档`。
-GitHub Desktop 应添加新的仓库路径，分支为 `feature/llm-rag-generation`。
+- 两门课程共60道题，每门30道，每个知识点3道；普通练习最多10道、同类练习最多3道。
+- 服务端注册/登录/退出；加盐 PBKDF2-HMAC-SHA256 密码哈希，HttpOnly Cookie 会话。
+- 以服务端随机用户 ID 隔离学习记录和错题；不能通过修改 user_id 冒充其他用户。
+- 作答落盘、网络重试去重、写入失败回滚、学习记录备份恢复。
+- 按不同题目最近一次结果估计掌握度，同时显示首次正确率与题目覆盖数，重复刷同一题不能获得“已掌握”。
+- 薄弱知识点优先推荐；题后辅导依据真实作答、标准解析及课程资料，支持换一道题验证。
+- RAG课程答疑及资料来源；模型未配置或失败时返回资料摘录/标准解析，无证据时不调用模型。
+- 前端样式、API传输、主应用和辅导组件分文件管理，保留原有页面与响应式设计。
 
-| 页面显示 | course_id | 知识库目录 |
-| --- | --- | --- |
-| C++程序设计 | cpp | knowledge_base/cpp |
-| 数据结构 | data-structure | knowledge_base/data_structure |
+## 架构与目录
 
-`C++` 是显示名称，内部标识必须是 `cpp`，不可改成 `c++`。
+```mermaid
+flowchart LR
+  UI[浏览器界面] --> API[C++ HTTP服务]
+  API --> AUTH[密码哈希与会话]
+  API --> STORE[账号/学习记录/错题持久化]
+  STORE --> REC[掌握度与薄弱题推荐]
+  REC --> UI
+  API --> RAG[按课程检索Markdown资料]
+  RAG --> LLM[WinHTTP调用大模型]
+  LLM --> UI
+  RAG --> FALLBACK[资料摘录与标准解析兜底]
+  FALLBACK --> UI
+```
 
-## 当前架构
+| 路径 | 职责 |
+| --- | --- |
+| frontend/index.html | 页面结构与首屏主题设置 |
+| frontend/css/app.css | 视觉样式与响应式布局 |
+| frontend/js/api-client.js | 带Cookie的API传输与会话恢复协调 |
+| frontend/js/app.js | 现有页面、练习、进度与交互 |
+| frontend/js/coach.js | 针对性辅导与不同题验证组件 |
+| backend/auth_store.h | 账号、密码哈希、会话、登录限流 |
+| backend/learning_progress.h | 作答记录、幂等提交、掌握度统计 |
+| backend/rag_retriever.* | 课程资料切块和关键词评分检索 |
+| backend/llm_client.* | 原生HTTPS模型请求与JSON解析 |
+| knowledge_base | 12份课程资料，cpp和data_structure两个目录 |
+| tests、scripts | 编译、启动、接口/浏览器验收和检索评测 |
 
-浏览器 → C++ HTTP 服务（8080）→ Markdown 课程资料检索 → C++ WinHTTP → DeepSeek。
+## 安装与运行
 
-后端、模型请求和模型响应解析均为 C++。Windows 自带 WinHTTP 负责 HTTPS，
-Windows Runtime JSON 通过 C++/WinRT 解析完整 JSON（含中文转义和 Unicode 代理对）。
-运行和测试均不依赖 Python，也不需要 8081 网关。
+运行环境：Windows 10/11 x64；Visual Studio“使用C++的桌面开发”及Windows SDK；CMake/Ninja由Visual Studio提供。后端使用C++20、Windows WinHTTP、C++/WinRT、Windows CNG；cpp-httplib随仓库提供，其许可证在third_party目录。测试还需要Node.js 18或以上；浏览器验收需要Playwright及Microsoft Edge。
 
-- 检索结果作为模型上下文，来源由后端保留和展示。
-- 没有证据时不调用模型；缺少密钥、超时、接口报错、响应异常时返回资料摘录。
-- 保留错题持久化、掌握状态、固定题库推荐和答案判定。
-- 来源代表提交给模型的参考片段，尚未做逐句引用校验。
-- 仍待实现：向量检索、流式输出、作答记录驱动的薄弱点诊断。
-- 前端部分辅助页面仍有演示逻辑，不能将全部图表视为真实学习数据。
-
-## 环境与编译
-
-Windows 10/11、Visual Studio C++ 桌面开发组件、Windows SDK（含 C++/WinRT）、CMake/Ninja。
-本项目使用 C++20。cpp-httplib 已随仓库提供，许可证见 third_party/cpp-httplib。
-
-在项目根目录执行：
+不依赖Python网关。无需安装前端框架即可运行；浏览器必须通过HTTP打开，不能直接双击HTML。
 
 ```powershell
 Set-Location "D:\Program Files\码上新智\mashangzhixin"
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1
+.\scripts\build.ps1
+.\scripts\start.ps1
 ```
 
-脚本自动加载 x64 编译环境，生成 `build/app/mashang_server.exe` 及 C++ 测试程序。
-不要再启动其他旧目录中的 exe；它们可能占用 8080，让网页访问到旧版本。
+打开 <http://127.0.0.1:8080>。正式程序是 `build/app/mashang_server.exe`，请勿再使用旧的D盘构建目录。构建前需关闭正在运行的本项目后端。
 
-## 模型配置
+可选：Live Server使用 `http://127.0.0.1:5500`。当前允许的浏览器来源为8080和5500，前端请求携带会话Cookie。优先使用后端直接提供的页面。
 
-复制 `.env.example` 为 `.env`。已有 `.env` 会继续生效，无需重新复制或改名：
+## 模型配置与离线演示
 
-```dotenv
-LLM_API_URL=https://api.deepseek.com/chat/completions
-LLM_MODEL=deepseek-flash
-LLM_API_KEY=你的API密钥
-LLM_TIMEOUT_SECONDS=30
-LLM_THINKING=disabled
-```
+复制 `.env.example` 为 `.env`，在本机填写模型地址、模型名称及密钥。模型名称须以服务商当前可用模型为准；密钥不得上传到仓库或写入前端。也支持进程环境变量 `LLM_API_KEY` / `DEEPSEEK_API_KEY`，详见模板与客户端实现。
 
-也兼容进程环境变量 `DEEPSEEK_API_KEY`。密钥优先级为：非空进程 `LLM_API_KEY` →
-非空进程 `DEEPSEEK_API_KEY` → `.env` 的 `LLM_API_KEY` → `.env` 的 `DEEPSEEK_API_KEY`。
-模型名称同样兼容 `DEEPSEEK_MODEL`：非空进程 LLM_MODEL → 非空进程 DEEPSEEK_MODEL → .env 的 LLM_MODEL → .env 的 DEEPSEEK_MODEL → 默认模型。其他设置优先使用非空进程环境变量，再读取 `.env`。
-修改配置后重启后端。密钥不得提交，`.env` 已被 Git 忽略。
-
-超时配置支持 1—45 秒；WinHTTP 使用阶段超时，程序还会检查响应读取预算。
-远程接口要求 HTTPS并正常校验证书；HTTP 仅允许本机测试。不会跟随重定向发送密钥。
-DeepSeek 默认使用非思考模式；切换其他服务商时，不支持 thinking 参数则清空 LLM_THINKING。
-[DeepSeek 参数说明](https://api-docs.deepseek.com/guides/thinking_mode/)。
-
-## 启动和真实 API 测试
+无密钥时练习、进度、账号、错题均可运行，答疑返回本地资料，辅导返回标准解析。API失败、超时和错误响应同样有回退。模型生成状态以 `mode=generated` 为准，不把资料摘录伪装成AI生成。
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start.ps1
+# 可选：一次真实模型连接测试，会产生服务商API用量
+.\scripts\test-api.ps1
 ```
 
-打开 http://127.0.0.1:8080/#qa ，按 Ctrl+C 停止服务。
-只启动一个 C++ 后端。后端直接提供 frontend 目录，不对外提供 .env 或 data 文件。
-当前服务仅监听本机，尚无公网部署或真正的多用户隔离。
+## 账号与数据说明
 
-单独验证真实模型（会发送一条简短请求，按服务商规则计费）：
+新用户请在“我的”注册服务端账号，密码至少8位。会话最长12小时，退出立即撤销，后端重启后需重新登录；账号和学习数据仍在。旧本机账号不自动变成服务器账号，旧明文密码字段在加载界面时移除。
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\test-api.ps1
-```
+为防止同名注册取得他人旧记录，新账号使用随机ID，不自动认领旧用户名的历史学习记录。旧数据保留，可由项目维护者在核验归属后单独迁移。账号名暂不支持修改。
 
-底层执行 `build/app/mashang_server.exe --test-api`。只报告成功或错误代码，不打印密钥。
-HTTP 401 表示鉴权问题，402 表示余额不足，429 表示限流。
+未登录的guest仍是共享演示身份，不用于保存私人学习资料。无owner字段的旧错题按guest保留。头像、签名、签到、小社区等辅助功能仍为本机数据，不宣称为完整在线社交服务。
 
-## 接口
+`data/accounts.json`、`data/learning_attempts.json`、`data/wrong_questions.json`及相关临时/备份文件均被Git忽略。请备份整个data目录，但不要上传其中的私人数据。学习文件损坏时可恢复上一个版本的.bak；账号文件损坏时服务拒绝启动，避免静默清空。
 
-| 接口 | 用途 |
+## API
+
+| 方法与路径 | 用途 |
 | --- | --- |
+| POST /api/auth/register、/api/auth/login | 注册或登录，返回会话Cookie |
+| GET /api/auth/me | 查询当前身份 |
+| POST /api/auth/logout | 撤销当前会话 |
 | GET /api/health | 健康检查 |
-| POST /api/ask | 检索与模型讲解 |
-| GET /api/wrong-questions | 查询错题 |
-| POST /api/wrong-questions | 保存错题 |
-| PUT /api/wrong-questions/{id}/status | 更新掌握状态 |
-| GET /api/recommendations | 获取题库推荐 |
-| POST /api/exercises/submit | 提交答案 |
+| POST /api/ask | 按课程检索与模型讲解 |
+| GET /api/recommendations | 普通或同知识点练习，优先薄弱点 |
+| POST /api/exercises/submit | 服务端判分、保存作答 |
+| POST /api/exercises/coach | 基于当前用户已提交题目的辅导 |
+| GET /api/progress | 当前用户的课程学习指标 |
+| GET / POST /api/wrong-questions | 当前用户查询/保存错题 |
+| PUT /api/wrong-questions/{id}/status | 更新本人错题状态 |
 
-```json
-{"course_id":"cpp","question":"C++中的指针和引用有什么区别？"}
-```
+课程ID固定为 `cpp` 和 `data-structure`。身份由Cookie确定；传入他人用户名会返回403，不能靠user_id授权。请求示例、指标和测试见 [学习进度说明](docs/learning-progress.md)。
 
-答疑返回 `answer`、`sources`、`mode`、`notice`：
-`generated` 表示模型生成；`retrieval` 表示回退资料摘录；`no_evidence` 表示没有足够资料。
-只看到 answer 和 sources 不足以证明真实模型调用成功，应检查 mode。
+## 测试
 
-## 本地测试
-
-先编译，关闭占用 8080 的后端，然后执行：
+关闭8080上的正式后端后依次运行。测试使用build下的独立数据目录，不写入正式账号和学习记录，不调用付费模型。
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\test.ps1
+.\scripts\test.ps1
+node .\tests\learning_progress_api.cjs
+node .\tests\rag_evaluation.cjs
+# 浏览器验收依赖，可先 npm ci --cache ./build/npm-cache
+node .\tests\hardening_acceptance.cjs
 ```
 
-C++ 测试在随机本地端口模拟模型，检查请求字段、中文 JSON、截断/空响应、超时、HTTP 错误、
-重定向拒绝、缺少密钥与配置优先级。PowerShell 隔离接口测试验证检索回退、无依据回答、
-错题和掌握状态重启恢复、推荐、判题、静态页面以及密钥文件不可访问。
-测试不调用付费模型，临时错题数据写在 build 下，不修改现有学习记录。
+`npm ci --cache ./build/npm-cache`仅用于安装浏览器测试依赖，应用运行无需Node。测试环境可用 `PLAYWRIGHT_MODULE` 指定已安装Playwright的模块路径。
 
-## 团队与参赛
+## 技术边界与参赛交付
 
-主要开发负责后端、AI 接入、联调和部署；队友负责课程资料、测试题、体验回归和参赛材料。
-正式提交前补齐团队姓名、学校、组别与指导老师信息。
+目前为本机Windows演示版本，监听127.0.0.1；尚未完成公网HTTPS部署。Cookie在本机HTTP下未设置Secure，公开部署前必须配置HTTPS、Secure Cookie、部署来源及访问限制。当前RAG是关键词评分检索，不是向量检索；模型为完整响应，尚无真正SSE流式输出；辅导是受约束的工作流，不宣称自主Agent。主应用仍有待进一步组件化，尚未迁移至React/Vue或TypeScript。
+
+检索评测见 [评测报告](docs/rag-evaluation.md)，交付材料与演示安排见 [参赛交付准备](docs/competition-delivery.md)。功能已实现并不等于正式资格审核通过；团队仍需核对赛事最新规则、组别和截止日期。
+
+## 团队
+
+项目主要开发：后端、AI流程、联调及工程维护。队友：资料和题目核对、评测问题、体验回归、演示讲稿与材料。正式提交前补齐姓名、学校、组别、指导教师和各自实际贡献；不得编造用户试用数据或AI效果。

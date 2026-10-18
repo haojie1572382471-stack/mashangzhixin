@@ -89,6 +89,9 @@ try {
         $answer = Api '/api/ask' @{course_id='cpp';question='指针和引用有什么区别？'}
         Assert ($answer.mode -eq 'generated' -and $answer.answer -eq 'Mock course explanation') ('Repeated model request ' + ($requestIndex + 1) + ' succeeds')
     }
+    $null = Api '/api/exercises/submit' @{exercise_id=201;answer='A'}
+    $coaching = Api '/api/exercises/coach' @{exercise_id=201}
+    Assert ($coaching.mode -eq 'generated' -and $coaching.sources.Count -gt 0 -and $coaching.verification_exercise_id -ne 201) 'Model coaching retains sources and a different verification exercise'
 } finally {
     if ($child -and !$child.HasExited) { Stop-Process -Id $child.Id; $child.WaitForExit() }
     if ($provider -and !$provider.HasExited) { Stop-Process -Id $provider.Id; $provider.WaitForExit() }

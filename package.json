@@ -1,0 +1,12 @@
+{
+  "name": "mashangzhixin-verification",
+  "private": true,
+  "description": "Browser acceptance dependencies only; the application runs on the native C++ server.",
+  "scripts": {
+    "test:learning": "node tests/learning_progress_api.cjs",
+    "test:browser": "node tests/hardening_acceptance.cjs",
+    "test:rag": "node tests/rag_evaluation.cjs"
+  },
+  "engines": {"node": ">=18"},
+  "devDependencies": {"playwright": "1.62.1"}
+}

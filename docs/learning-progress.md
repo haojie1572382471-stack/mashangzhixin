@@ -1,44 +1,39 @@
-# 学习记录与个性化复习
+# 学习记录、身份与掌握度
 
-## 数据与身份
+## 身份和历史数据
 
-每次有效判分在回复成功前写入 `data/learning_attempts.json`。记录包含 user_id、exercise_id、course_id、knowledge_point、selected_answer、correct、UTC attempted_at 和可选 submission_id。题目所属课程、知识点和正确性由后端题库确定，不能由前端提交覆盖。
+前端账号通过 /api/auth/register、/login 获得HttpOnly会话Cookie，服务端生成随机稳定用户ID。/api/progress、推荐、提交和错题接口均从会话取得身份，user_id字段只作兼容一致性检查，不能用来读取他人数据。密码使用独立随机盐和600000轮PBKDF2-HMAC-SHA256，不保存明文。会话在内存中保存12小时，退出撤销，服务重启后重新登录。
 
-登录时前端发送现有用户名，未登录使用 `guest`。记录按用户名和课程独立统计。当前登录仍是本机演示登录；服务端没有会话鉴权，user_id 是客户端声明的统计标识，并非访问权限凭证。多个未登录访问者共用 guest；改名会形成新的统计标识，不自动迁移旧名字记录。上线多用户部署前需用服务端登录会话确定用户身份。
+原来的用户名分组记录保留在文件中，新注册同名账号不能自动取得这些记录。旧本机账号需重新注册；本机资料缓存只保留头像、签名等非认证数据。访客guest是公开共享演示身份。原错题没有user_id时归属guest。公开部署前必须改为HTTPS并设置Secure Cookie。
 
-文件、临时文件和备份均已加入 .gitignore。使用互斥锁串行更新，先写临时文件并刷新到磁盘，再保存上一个版本备份并原子替换正式文件。写入失败返回500，不更新内存计数。重启优先读取正式文件，损坏时可恢复 `.bak`；备份是上一次成功保存之前的版本，可能少最后一次记录，启动日志会说明恢复。正式文件和备份均损坏则拒绝启动，避免悄悄清空记录。
+## 持久化
 
-## 指标规则
+作答写入data/learning_attempts.json。字段包括服务端用户ID、题号、课程、知识点、选择、对错、UTC时间及submission_id。写入顺序为临时文件、FlushFileBuffers、旧版本备份、原子替换。失败时回滚内存并返回500。同一个用户的同一submission_id重复请求返回reused=true、recorded=false和原attempt_id；相同提交号但答案或题目不一致返回409。
 
-- total_attempts / correct_attempts / accuracy：当前用户在当前课程的全部有效作答，正确率四舍五入为0—100的整数。
-- 知识点 mastery：该知识点最近20次作答正确率，不满20次则使用已有记录。
-- 未学习：尚无记录。待加强：掌握度低于60%。已掌握：至少作答3次且掌握度达到80%。其余为学习中。
-- 课程 mastery：该课程全部10个知识点掌握度平均值，未学习记0，用于展示课程覆盖程度，区别于总体正确率。
-- 同一道题重新练习仍会产生新记录。仅网络重试复用相同 submission_id 时去重，避免回复丢失造成重复计数。
-- 这是可解释的练习表现指标，反复答同一题也会提高分数，不代表经过正式测评的能力结论。
+学习文件损坏时尝试.bak；该备份可能少最后一条记录，恢复会在启动日志提示。两个文件都损坏则拒绝启动。账号文件独立保存密码哈希，损坏时同样拒绝启动；应定期做项目外的数据备份。
 
-## 接口
+## 指标
 
-`POST /api/exercises/submit` 在原 exercise_id、answer 外可传 user_id 和 submission_id。缺少 user_id 按 guest 处理。submission_id 可由 crypto.randomUUID 生成，同一用户的同一提交失败重试时复用；重新开始一轮练习生成新值。重复标识但题目或答案不同返回409。非法答案返回400，不记录；未知题目返回404。成功保留原判题字段，并增加 recorded 和 attempt_id。
+- total_attempts、correct_attempts、accuracy：所有成功保存的有效作答，包含重复练习。
+- unique_exercises：该知识点答过的不同题目数。
+- first_attempt_accuracy：每道不同题的首次作答正确率，不会因刷题被改写。
+- mastery：最多20道不同题各自最近一次作答的正确率；重复同题只替换该题结果，不重复增加权重。
+- 未学习：没有记录；待加强：mastery低于60%；已掌握：至少覆盖3道不同题且mastery不低于80%；其余为学习中。
+- last_attempted_at：最后作答UTC时间。
+- 课程mastery：10个知识点的掌握度平均值，未学计0。它同时反映覆盖程度，与总体正确率不同。
 
-`GET /api/progress?user_id=guest&course_id=cpp` 返回全部10个知识点，包括零记录知识点，以及总次数、答对次数、正确率、课程掌握度和 weak_knowledge_points。course_id 必须是 cpp 或 data-structure。
+这些是可解释的练习表现估计，不是经心理测量验证的能力诊断。当前每个知识点仅3题，题库扩充后才适合更细的能力判断。
 
-`GET /api/recommendations?user_id=guest&course_id=cpp` 仍返回最多10道不重复题。先随机打散，再将已作答且掌握度低于60%的知识点排到前面，掌握度越低越优先，同优先级随机。剩余名额由其他随机题补足。无历史保持随机。指定 knowledge_point 时仍只返回同知识点最多3题，查不到时保留原课程回退行为。
+## 推荐与辅导
 
-## 页面
+普通推荐每次最多10题；已作答且mastery低于60%的知识点优先，分数越低越靠前，同优先级随机。同知识点最多3题。无历史记录时随机推荐。未找到指定知识点时仍保留课程内回退并提示。
 
-进度页顶部使用后端真实指标，可切换课程、刷新进度和点击知识点进入同类题练习。原有章节任务和签到保留在“本机手动记录”折叠区域，不用于计算真实掌握度。练习和错题重练均传递当前用户名；切换账号时清除上一用户的练习状态并丢弃过期响应。
+/api/exercises/coach仅接受当前身份已提交过的题号，从服务端读取最近选择、标准答案与解析，以知识点检索资料。模型仅负责解释可能误区与复习步骤，不参与判分。无资料或无模型时返回标准解析。verification_exercise_id指定另一道真实同知识点题；前端验证环节排除刚讲解的题。
 
-## 验证与运行
+来源展示表示该资料被用于上下文，不代表逐句事实校验已完成。当前模型响应不是流式，也不能声称运行过用户代码。
 
-从正式仓库运行：
+## 验收
 
-```powershell
-.\scripts\build.ps1
-# 运行测试前确保8080端口没有后端服务。
-.\scripts\test.ps1
-node .\tests\learning_progress_api.cjs
-.\scripts\start.ps1
-```
+运行tests/learning_progress_api.cjs和tests/hardening_acceptance.cjs。覆盖账号/课程隔离、越权阻止、注销失效、重启登录、错题权限、幂等提交、并发、损坏恢复、刷同题不能已掌握、辅导回退和浏览器完整流程。运行scripts/test.ps1保留原有模型失败回退和错题等回归验证。
 
-学习进度集成测试在临时隔离目录中覆盖：用户/课程隔离、游客、对错题和重复作答、提交去重、并发写入、最近20题窗口、薄弱推荐、保存失败回滚、重启恢复和损坏文件处理。不会写入正式学习记录或调用付费模型。
+实现参考：[Microsoft CNG PBKDF2 API](https://learn.microsoft.com/en-us/windows/win32/api/bcrypt/nf-bcrypt-bcryptderivekeypbkdf2)、[OWASP密码存储指南](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)。选用Windows自带CNG以避免额外密码学依赖；并不因此声称本项目取得了任何安全认证。
