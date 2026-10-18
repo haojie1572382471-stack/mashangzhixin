@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <random>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -1280,6 +1281,14 @@ int main(int argc, char **argv) {
                                matches.push_back(&exercise);
                            }
                        }
+                   }
+
+                   const std::size_t recommendation_limit =
+                       knowledge_point.empty() ? 10U : 3U;
+                   std::mt19937 generator{std::random_device{}()};
+                   std::shuffle(matches.begin(), matches.end(), generator);
+                   if (matches.size() > recommendation_limit) {
+                       matches.resize(recommendation_limit);
                    }
 
                    response.set_content(
