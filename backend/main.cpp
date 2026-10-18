@@ -12,6 +12,7 @@
 #include <iostream>
 #include <mutex>
 #include <random>
+#include <set>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -1265,7 +1266,9 @@ int main(int argc, char **argv) {
 
     server.Get("/api/progress", [&](const httplib::Request& request, httplib::Response& response) {
         const auto user = request.has_param("user_id") ? request.get_param_value("user_id") : "guest";
-        const auto course = request.get_param_value("course_id");
+        const auto course = request.has_param("course_id")
+            ? request.get_param_value("course_id")
+            : "";
         if (!mashangzhixin::LearningProgress::valid_user(user) || !is_supported_course(course)) {
             response.status = 400;
             response.set_content(R"({"status":"error","message":"Valid user_id and course_id are required"})", "application/json; charset=utf-8");
@@ -1411,7 +1414,9 @@ int main(int argc, char **argv) {
                     const std::string body =
                         "{\"status\":\"ok\",\"exercise_id\":" +
                         std::to_string(target->id) +
-                        ",\"attempt_id\":" + std::to_string(attempt_id) + ",\"recorded\":true" +
+                        ",\"attempt_id\":" + std::to_string(attempt_id) +
+                        ",\"recorded\":" + (saved == "ok" ? "true" : "false") +
+                        ",\"reused\":" + (saved == "reused" ? "true" : "false") +
                         ",\"correct\":" + (correct ? "true" : "false") +
                         ",\"correct_answer\":\"" +
                         escape_json_string(target->correct_answer) +

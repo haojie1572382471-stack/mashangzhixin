@@ -21,9 +21,6 @@ node_modules/
 dist/
 __pycache__/
 *.pyc
-# Runtime data
-data/wrong_questions.json
-data/wrong_questions.json.tmp
 # Runtime wrong-question data
 data/wrong_questions.json
 data/wrong_questions.json.tmp
