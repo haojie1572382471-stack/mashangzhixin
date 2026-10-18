@@ -189,13 +189,13 @@ p.lede{top:calc(446 * var(--u)); font-size:calc(18.36 * var(--u)); font-weight:4
   outline:calc(2 * var(--u)) solid var(--cyan); outline-offset:calc(3 * var(--u))}
 
 /* ============ MINE VIEW (我的) ============ */
-.view-mine,.view-progress,.view-suggest,.view-charts,.view-mistakes,.view-qa{position:absolute; inset:0; z-index:4; pointer-events:auto;
+.view-mine,.view-progress,.view-suggest,.view-charts,.view-mistakes,.view-qa,.view-practice{position:absolute; inset:0; z-index:4; pointer-events:auto;
   overflow-y:auto; -webkit-overflow-scrolling:touch;
   background:linear-gradient(180deg, rgba(3,12,28,.52) 0%, rgba(4,16,31,.84) 100%);
   -webkit-backdrop-filter:blur(calc(14 * var(--u)));
   backdrop-filter:blur(calc(14 * var(--u)));
   opacity:0; visibility:hidden; transition:opacity .32s ease, visibility .32s}
-.view-mine.is-open,.view-progress.is-open,.view-suggest.is-open,.view-charts.is-open,.view-mistakes.is-open,.view-qa.is-open{opacity:1; visibility:visible}
+.view-mine.is-open,.view-progress.is-open,.view-suggest.is-open,.view-charts.is-open,.view-mistakes.is-open,.view-qa.is-open,.view-practice.is-open{opacity:1; visibility:visible}
 .mine-wrap{max-width:calc(1080 * var(--u)); margin:0 auto;
   padding:calc(150 * var(--u)) calc(44 * var(--u)) calc(90 * var(--u))}
 .mine-grid{display:grid; grid-template-columns:1fr 1fr; gap:calc(28 * var(--u)); align-items:start}
@@ -1334,7 +1334,7 @@ html.motion-off .dmnk-layer{display:none}
   .gear{display:none}
   .hint-keys{display:none}
   .hint{bottom:calc(84 * var(--u) + var(--sab))}
-  .view-mine,.view-progress,.view-suggest,.view-charts,.view-mistakes,.view-qa{
+  .view-mine,.view-progress,.view-suggest,.view-charts,.view-mistakes,.view-qa,.view-practice{
     padding-bottom:calc(76 * var(--u) + var(--sab))}
 }
 
@@ -1394,7 +1394,7 @@ html.theme-bamboo .label:hover,html.theme-taro .label:hover{border-color:rgba(va
              0 0 calc(28 * var(--u)) rgba(var(--th-acc),0.154),
              inset 0 calc(1 * var(--u)) 0 rgba(var(--th-ink),0.134)}
 html.theme-bamboo .hint,html.theme-taro .hint{color:rgba(var(--th-acc-ink),0.86);text-shadow:0 calc(2 * var(--u)) calc(6 * var(--u)) rgba(var(--th-ink),0.2)}
-html.theme-bamboo .view-mine,html.theme-taro .view-mine,html.theme-bamboo .view-progress,html.theme-taro .view-progress,html.theme-bamboo .view-suggest,html.theme-taro .view-suggest,html.theme-bamboo .view-charts,html.theme-taro .view-charts,html.theme-bamboo .view-mistakes,html.theme-taro .view-mistakes,html.theme-bamboo .view-qa,html.theme-taro .view-qa{background:linear-gradient(180deg, rgba(255,255,255,0.618) 0%, rgba(255,255,255,0.739) 100%)}
+html.theme-bamboo .view-mine,html.theme-taro .view-mine,html.theme-bamboo .view-progress,html.theme-taro .view-progress,html.theme-bamboo .view-suggest,html.theme-taro .view-suggest,html.theme-bamboo .view-charts,html.theme-taro .view-charts,html.theme-bamboo .view-mistakes,html.theme-taro .view-mistakes,html.theme-bamboo .view-qa,html.theme-bamboo .view-practice,html.theme-taro .view-qa,html.theme-taro .view-practice{background:linear-gradient(180deg, rgba(255,255,255,0.618) 0%, rgba(255,255,255,0.739) 100%)}
 html.theme-bamboo .card,html.theme-taro .card{background:rgba(var(--th-ink),0.084);border:calc(1 * var(--u)) solid rgba(var(--th-ink),0.18);box-shadow:0 calc(18 * var(--u)) calc(44 * var(--u)) rgba(var(--th-ink),0.158),
              inset 0 0 calc(20 * var(--u)) rgba(var(--th-ink),0.056)}
 html.theme-bamboo .card-title,html.theme-taro .card-title{color:rgba(var(--th-ink),1)}
@@ -1776,8 +1776,8 @@ html.theme-bamboo .card,html.theme-taro .card{background:linear-gradient(180deg,
 html.theme-bamboo .card:hover,html.theme-taro .card:hover{border-color:rgba(var(--th-ink),0.26);box-shadow:0 calc(30 * var(--u)) calc(64 * var(--u)) rgba(var(--th-ink),0.175),
              inset 0 calc(1 * var(--u)) 0 rgba(var(--th-ink),0.109),
              0 0 calc(34 * var(--u)) rgba(var(--th-acc),0.112)}
-html.theme-bamboo .view-mine::-webkit-scrollbar-thumb,html.theme-taro .view-mine::-webkit-scrollbar-thumb,html.theme-bamboo .view-progress::-webkit-scrollbar-thumb,html.theme-taro .view-progress::-webkit-scrollbar-thumb,html.theme-bamboo .view-suggest::-webkit-scrollbar-thumb,html.theme-taro .view-suggest::-webkit-scrollbar-thumb,html.theme-bamboo .view-charts::-webkit-scrollbar-thumb,html.theme-taro .view-charts::-webkit-scrollbar-thumb,html.theme-bamboo .view-mistakes::-webkit-scrollbar-thumb,html.theme-taro .view-mistakes::-webkit-scrollbar-thumb,html.theme-bamboo .view-qa::-webkit-scrollbar-thumb,html.theme-taro .view-qa::-webkit-scrollbar-thumb{background:rgba(var(--th-ink),0.139)}
-html.theme-bamboo .view-mine::-webkit-scrollbar-thumb:hover,html.theme-taro .view-mine::-webkit-scrollbar-thumb:hover,html.theme-bamboo .view-progress::-webkit-scrollbar-thumb:hover,html.theme-taro .view-progress::-webkit-scrollbar-thumb:hover,html.theme-bamboo .view-suggest::-webkit-scrollbar-thumb:hover,html.theme-taro .view-suggest::-webkit-scrollbar-thumb:hover,html.theme-bamboo .view-charts::-webkit-scrollbar-thumb:hover,html.theme-taro .view-charts::-webkit-scrollbar-thumb:hover,html.theme-bamboo .view-mistakes::-webkit-scrollbar-thumb:hover,html.theme-taro .view-mistakes::-webkit-scrollbar-thumb:hover,html.theme-bamboo .view-qa::-webkit-scrollbar-thumb:hover,html.theme-taro .view-qa::-webkit-scrollbar-thumb:hover{background:rgba(var(--th-acc),0.28)}
+html.theme-bamboo .view-mine::-webkit-scrollbar-thumb,html.theme-taro .view-mine::-webkit-scrollbar-thumb,html.theme-bamboo .view-progress::-webkit-scrollbar-thumb,html.theme-taro .view-progress::-webkit-scrollbar-thumb,html.theme-bamboo .view-suggest::-webkit-scrollbar-thumb,html.theme-taro .view-suggest::-webkit-scrollbar-thumb,html.theme-bamboo .view-charts::-webkit-scrollbar-thumb,html.theme-taro .view-charts::-webkit-scrollbar-thumb,html.theme-bamboo .view-mistakes::-webkit-scrollbar-thumb,html.theme-taro .view-mistakes::-webkit-scrollbar-thumb,html.theme-bamboo .view-qa::-webkit-scrollbar-thumb,html.theme-bamboo .view-practice::-webkit-scrollbar-thumb,html.theme-taro .view-qa::-webkit-scrollbar-thumb,html.theme-taro .view-practice::-webkit-scrollbar-thumb{background:rgba(var(--th-ink),0.139)}
+html.theme-bamboo .view-mine::-webkit-scrollbar-thumb:hover,html.theme-taro .view-mine::-webkit-scrollbar-thumb:hover,html.theme-bamboo .view-progress::-webkit-scrollbar-thumb:hover,html.theme-taro .view-progress::-webkit-scrollbar-thumb:hover,html.theme-bamboo .view-suggest::-webkit-scrollbar-thumb:hover,html.theme-taro .view-suggest::-webkit-scrollbar-thumb:hover,html.theme-bamboo .view-charts::-webkit-scrollbar-thumb:hover,html.theme-taro .view-charts::-webkit-scrollbar-thumb:hover,html.theme-bamboo .view-mistakes::-webkit-scrollbar-thumb:hover,html.theme-taro .view-mistakes::-webkit-scrollbar-thumb:hover,html.theme-bamboo .view-qa::-webkit-scrollbar-thumb:hover,html.theme-bamboo .view-practice::-webkit-scrollbar-thumb:hover,html.theme-taro .view-qa::-webkit-scrollbar-thumb:hover,html.theme-taro .view-practice::-webkit-scrollbar-thumb:hover{background:rgba(var(--th-acc),0.28)}
 html.theme-bamboo .field input,html.theme-taro .field input,html.theme-bamboo .mk-select,html.theme-taro .mk-select,html.theme-bamboo .qa-select,html.theme-taro .qa-select,html.theme-bamboo .qa-textarea,html.theme-taro .qa-textarea,html.theme-bamboo .sug-composer textarea,html.theme-taro .sug-composer textarea,html.theme-bamboo .ch-input-card textarea,html.theme-taro .ch-input-card textarea,html.theme-bamboo .sig-textarea,html.theme-taro .sig-textarea,html.theme-bamboo .invite-out input,html.theme-taro .invite-out input{background:linear-gradient(160deg, rgba(var(--th-ink),0.081), rgba(255,255,255,0.629));border:calc(1 * var(--u)) solid rgba(var(--th-ink),0.205);box-shadow:inset 0 calc(1 * var(--u)) 0 rgba(var(--th-ink),0.068)}
 html.theme-bamboo .field input:focus,html.theme-taro .field input:focus,html.theme-bamboo .mk-select:focus,html.theme-taro .mk-select:focus,html.theme-bamboo .qa-select:focus,html.theme-taro .qa-select:focus,html.theme-bamboo .qa-textarea:focus,html.theme-taro .qa-textarea:focus,html.theme-bamboo .sug-composer textarea:focus,html.theme-taro .sug-composer textarea:focus,html.theme-bamboo .ch-input-card textarea:focus,html.theme-taro .ch-input-card textarea:focus,html.theme-bamboo .sig-textarea:focus,html.theme-taro .sig-textarea:focus{border-color:rgba(var(--th-acc),0.78);box-shadow:0 0 0 calc(3 * var(--u)) rgba(var(--th-acc),0.112),
              inset 0 calc(1 * var(--u)) 0 rgba(var(--th-ink),0.075)}
@@ -2133,29 +2133,29 @@ html.theme-bamboo :focus-visible,html.theme-taro :focus-visible{outline-color:rg
              inset 0 calc(1 * var(--u)) 0 rgba(255,255,255,.42),
              0 0 calc(34 * var(--u)) rgba(121,220,232,.16)}
 /* ④ 页面视图：更强的背景磨砂 + 平滑滚动 + 玻璃滚动条 */
-.view-mine,.view-progress,.view-suggest,.view-charts,.view-mistakes,.view-qa{
+.view-mine,.view-progress,.view-suggest,.view-charts,.view-mistakes,.view-qa,.view-practice{
   -webkit-backdrop-filter:blur(calc(20 * var(--u))) saturate(150%);
   backdrop-filter:blur(calc(20 * var(--u))) saturate(150%);
   scroll-behavior:smooth}
 .view-mine::-webkit-scrollbar,.view-progress::-webkit-scrollbar,.view-suggest::-webkit-scrollbar,
-.view-charts::-webkit-scrollbar,.view-mistakes::-webkit-scrollbar,.view-qa::-webkit-scrollbar{
+.view-charts::-webkit-scrollbar,.view-mistakes::-webkit-scrollbar,.view-qa::-webkit-scrollbar,.view-practice::-webkit-scrollbar{
   width:calc(8 * var(--u))}
 .view-mine::-webkit-scrollbar-track,.view-progress::-webkit-scrollbar-track,
 .view-suggest::-webkit-scrollbar-track,.view-charts::-webkit-scrollbar-track,
-.view-mistakes::-webkit-scrollbar-track,.view-qa::-webkit-scrollbar-track{background:transparent}
+.view-mistakes::-webkit-scrollbar-track,.view-qa::-webkit-scrollbar-track,.view-practice::-webkit-scrollbar-track{background:transparent}
 .view-mine::-webkit-scrollbar-thumb,.view-progress::-webkit-scrollbar-thumb,
 .view-suggest::-webkit-scrollbar-thumb,.view-charts::-webkit-scrollbar-thumb,
-.view-mistakes::-webkit-scrollbar-thumb,.view-qa::-webkit-scrollbar-thumb{
+.view-mistakes::-webkit-scrollbar-thumb,.view-qa::-webkit-scrollbar-thumb,.view-practice::-webkit-scrollbar-thumb{
   background:rgba(255,255,255,.18); border-radius:calc(4 * var(--u))}
 .view-mine::-webkit-scrollbar-thumb:hover,.view-progress::-webkit-scrollbar-thumb:hover,
 .view-suggest::-webkit-scrollbar-thumb:hover,.view-charts::-webkit-scrollbar-thumb:hover,
-.view-mistakes::-webkit-scrollbar-thumb:hover,.view-qa::-webkit-scrollbar-thumb:hover{
+.view-mistakes::-webkit-scrollbar-thumb:hover,.view-qa::-webkit-scrollbar-thumb:hover,.view-practice::-webkit-scrollbar-thumb:hover{
   background:rgba(121,220,232,.35)}
 /* ⑤ 页面打开时卡片交错入场（用 translate 属性，不占用 transform 以免影响悬停） */
 @keyframes glassIn{from{opacity:0; translate:0 calc(16 * var(--u))}
                    to{opacity:1; translate:0 0}}
 .view-mine.is-open .card,.view-progress.is-open .card,.view-suggest.is-open .card,
-.view-charts.is-open .card,.view-mistakes.is-open .card,.view-qa.is-open .card{
+.view-charts.is-open .card,.view-mistakes.is-open .card,.view-qa.is-open .card,.view-practice.is-open .card{
   animation:glassIn .55s cubic-bezier(.22,1,.36,1) both}
 .mine-grid > *:nth-child(2),.qa-grid > *:nth-child(2),.mk-grid > *:nth-child(2),
 .prog-grid > *:nth-child(2),.ch-grid > *:nth-child(2),
@@ -2248,6 +2248,25 @@ html.theme-bamboo :focus-visible,html.theme-taro :focus-visible{outline-color:rg
   .card:hover,.prog-card:hover,.shop-frame:hover{transform:none}
   .prog-bar-fill::after,.prog-ch-bar i::after,.study-bar i::after{animation:none; display:none}
 }
+.stage.is-practice .copy,.stage.is-practice .hint{display:none}
+.stage.is-practice .navbar{background:rgba(3,12,28,.8)}
+.pr-wrap{max-width:960px;margin:auto;padding:140px 24px 70px;color:var(--text,#edf8ff)}
+.pr-head,.pr-actions,.pr-courses{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.pr-head{justify-content:space-between}.pr-head h1{font-size:28px;margin:0}.pr-card{padding:28px}
+.pr-wrap button{font:inherit;color:inherit;border:1px solid rgba(160,220,240,.3);border-radius:14px;background:rgba(255,255,255,.08);padding:12px 18px;cursor:pointer}
+.pr-wrap button:focus-visible{outline:2px solid #79dce8;outline-offset:3px}
+.pr-wrap button:disabled{opacity:.45;cursor:not-allowed}.pr-wrap button[aria-pressed="true"],.pr-wrap .pr-primary{background:rgba(76,184,207,.25);border-color:#79dce8}
+.pr-meta{color:#a6dce5;margin:12px 0}.pr-question{font-size:21px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+.pr-options{display:grid;gap:12px;margin:24px 0}.pr-options button{text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}
+.pr-options button.pr-correct{background:rgba(34,180,110,.22);border-color:#61e1a3;opacity:1}
+.pr-options button.pr-wrong{background:rgba(225,70,85,.22);border-color:#ff8996;opacity:1}
+.pr-result{padding:18px;border-left:3px solid #79dce8;background:rgba(255,255,255,.06);white-space:pre-wrap;line-height:1.8;margin:18px 0;overflow-wrap:anywhere}
+html.theme-bamboo .pr-wrap,html.theme-taro .pr-wrap{color:rgb(var(--th-ink))}
+html.theme-bamboo .pr-meta,html.theme-taro .pr-meta{color:rgba(var(--th-ink),.8)}
+html.theme-bamboo .stage.is-practice .navbar,html.theme-taro .stage.is-practice .navbar{background:rgba(255,255,255,.85)}
+.pr-status{min-height:26px;line-height:1.7;margin:16px 0}.pr-wrap [hidden]{display:none!important}
+.pr-stats{font-size:20px;line-height:2;white-space:pre-line;margin:24px 0}
+@media(max-width:600px){.pr-wrap{padding:110px 16px 50px}.pr-card{padding:18px}.pr-head h1{font-size:24px}.pr-actions button{flex:1}.pr-question{font-size:18px}}
 </style>
 </head>
 <body>
@@ -2286,7 +2305,7 @@ html.theme-bamboo :focus-visible,html.theme-taro :focus-visible{outline-color:rg
       <div class="col cta">
         <button class="label label-l" type="button" aria-label="上一章"><span class="lno">拾</span><span class="lnm">综合应用与课程设计</span></button>
         <button class="label label-r" type="button" aria-label="下一章"><span class="lno">壹</span><span class="lnm">绪论</span></button>
-        <a href="#">开始学习</a>
+        <a href="#practice" id="start-learn">开始学习</a>
       </div>
     </div>
     <div class="view view-mine" id="view-mine" aria-hidden="true">
@@ -2486,6 +2505,33 @@ html.theme-bamboo :focus-visible,html.theme-taro :focus-visible{outline-color:rg
             <div class="mk-tip">💡 数据结构错题最容易混淆，建议按章节逐个击破。</div>
           </main>
         </div>
+      </div>
+    </div>
+    <div class="view view-practice" id="view-practice" aria-hidden="true">
+      <div class="pr-wrap">
+        <div class="pr-head"><h1>章节练习</h1><button type="button" id="pr-home">返回首页</button></div>
+        <div class="pr-courses" aria-label="选择课程">
+          <button type="button" data-pr-course="cpp" aria-pressed="true">C++程序设计</button>
+          <button type="button" data-pr-course="data-structure" aria-pressed="false">数据结构</button>
+        </div>
+        <section class="card pr-card" aria-label="练习题">
+          <div id="pr-status" class="pr-status" role="status" aria-live="polite"></div>
+          <button type="button" id="pr-reload" hidden>重新加载题目</button>
+          <div id="pr-question-panel" hidden>
+            <div id="pr-progress" class="pr-meta"></div>
+            <div id="pr-knowledge" class="pr-meta"></div>
+            <h2 id="pr-question" class="pr-question"></h2>
+            <div id="pr-options" class="pr-options" role="group" aria-label="答案选项"></div>
+            <div class="pr-actions"><button type="button" id="pr-submit" class="pr-primary">提交答案</button><button type="button" id="pr-save" hidden>加入错题集</button></div>
+            <div id="pr-result" class="pr-result" role="status" hidden></div>
+            <div class="pr-actions"><button type="button" id="pr-prev">上一题</button><button type="button" id="pr-next">下一题</button><button type="button" id="pr-similar">同类题巩固</button></div>
+          </div>
+          <div id="pr-summary" hidden>
+            <h2>练习完成</h2><div id="pr-stats" class="pr-stats"></div>
+            <div class="pr-actions"><button type="button" id="pr-retry">再练一次</button><button type="button" id="pr-mistakes">查看错题</button><button type="button" id="pr-summary-home">返回首页</button></div>
+            <p>错题需要点击“加入错题集”保存；可返回题目补充保存。</p><button type="button" id="pr-review">回顾本次题目</button>
+          </div>
+        </section>
       </div>
     </div>
     <div class="view view-qa" id="view-qa" aria-hidden="true">
@@ -3411,6 +3457,7 @@ applyInstant('preface');
 
 /* ================= VIEWS & "我的" PANEL ================= */
 var stageEl=document.querySelector('.stage');
+var viewPractice=document.getElementById('view-practice');
 var viewMine=document.getElementById('view-mine');
 bindTouchFx(viewMine);
 var currentView='hero';
@@ -3419,13 +3466,16 @@ var navAll=document.querySelectorAll('.links a');
 function setView(v){
   currentView=v;
   var isMine=v==='mine', isProg=v==='progress', isSug=v==='suggest',
-      isCharts=v==='charts', isMk=v==='mistakes', isQa=v==='qa';
+      isCharts=v==='charts', isMk=v==='mistakes', isQa=v==='qa', isPractice=v==='practice';
   stageEl.classList.toggle('is-mine',isMine);
   stageEl.classList.toggle('is-progress',isProg);
   stageEl.classList.toggle('is-suggest',isSug);
   stageEl.classList.toggle('is-charts',isCharts);
   stageEl.classList.toggle('is-mistakes',isMk);
   stageEl.classList.toggle('is-qa',isQa);
+  stageEl.classList.toggle('is-practice',isPractice);
+  viewPractice.classList.toggle('is-open',isPractice);
+  viewPractice.setAttribute('aria-hidden',isPractice?'false':'true');
   viewMine.classList.toggle('is-open',isMine);
   viewMine.setAttribute('aria-hidden',isMine?'false':'true');
   viewProgress.classList.toggle('is-open',isProg);
@@ -3447,6 +3497,7 @@ function setView(v){
   if(isQa) qaInit();
   var openedView=isMine?viewMine:(isProg?viewProgress:(isSug?viewSuggest:
                   (isCharts?viewCharts:(isMk?viewMistakes:(isQa?viewQa:null)))));
+  if(isPractice){ openedView=viewPractice; if(!prState.started) prLoad('cpp'); }
   if(openedView&&openedView.scrollTop) openedView.scrollTop=0;
   for(var i=0;i<navAll.length;i++){
     var l=navAll[i];
@@ -7219,10 +7270,125 @@ qaUpdateCount();
 bindDrops(viewQa);
 bindTouchFx(viewQa);
 
+/* ================= Real API chapter practice ================= */
+var PR_API_BASE=MK_API_BASE;
+var PR_API_RECOMMENDATIONS=PR_API_BASE+'/api/recommendations';
+var PR_API_SUBMIT=PR_API_BASE+'/api/exercises/submit';
+var PR_API_WRONG=PR_API_BASE+'/api/wrong-questions';
+var prState={courseId:'cpp',items:[],currentIndex:0,selectedAnswers:{},results:{},loading:false,submitting:false,saving:false,savedWrongQuestions:{},started:false,finished:false,knowledgePoint:''};
+function prEl(id){return document.getElementById('pr-'+id);}
+function prBusy(){return prState.loading||prState.submitting||prState.saving;}
+function prQuestion(){return prState.items[prState.currentIndex];}
+function prStatus(text){prEl('status').textContent=text;}
+async function prRequest(url,body){
+  var controller=new AbortController(), timer=setTimeout(function(){controller.abort();},15000);
+  try{
+    var response=await fetch(url,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:controller.signal});
+    if(!response.ok) throw new Error('HTTP '+response.status);
+    return await response.json();
+  }finally{clearTimeout(timer);}
+}
+function prRender(){
+  var busy=prBusy(),q=prQuestion(),r=q&&prState.results[q.id];
+  viewPractice.setAttribute('aria-busy',busy?'true':'false');
+  viewPractice.querySelectorAll('[data-pr-course]').forEach(function(b){b.disabled=busy;b.setAttribute('aria-pressed',b.dataset.prCourse===prState.courseId?'true':'false');});
+  prEl('question-panel').hidden=!q||prState.loading||prState.finished;
+  prEl('summary').hidden=!prState.finished;
+  prEl('reload').hidden=!!q||prState.loading||prState.finished;
+  prEl('reload').disabled=busy;
+  if(prState.finished){
+    var correct=prState.items.filter(function(item){return prState.results[item.id]&&prState.results[item.id].correct;}).length;
+    prEl('stats').textContent='总题数：'+prState.items.length+'\n答对数量：'+correct+'\n答错数量：'+(prState.items.length-correct)+'\n正确率：'+Math.round(correct/prState.items.length*100)+'%';
+  }
+  if(!q)return;
+  prEl('progress').textContent='第 '+(prState.currentIndex+1)+' / '+prState.items.length+' 题 · 题目编号 '+q.id;
+  prEl('knowledge').textContent='知识点：'+(q.knowledge_point||'未分类');
+  prEl('question').textContent=q.question;
+  prEl('options').replaceChildren();
+  q.options.forEach(function(option){
+    var b=document.createElement('button');b.type='button';b.textContent=option.key+' · '+option.text;
+    b.dataset.key=option.key;b.setAttribute('aria-pressed',prState.selectedAnswers[q.id]===option.key?'true':'false');b.disabled=busy||!!r;
+    if(r&&option.key===r.correct_answer)b.classList.add('pr-correct');
+    if(r&&!r.correct&&option.key===prState.selectedAnswers[q.id])b.classList.add('pr-wrong');
+    b.addEventListener('click',function(){if(prBusy()||prState.results[q.id])return;prState.selectedAnswers[q.id]=option.key;prStatus('');prRender();prEl('options').querySelector('[data-key="'+option.key+'"]').focus();});
+    prEl('options').appendChild(b);
+  });
+  prEl('submit').disabled=busy||!!r;prEl('submit').textContent=prState.submitting?'正在提交……':r?'已提交':'提交答案';
+  prEl('result').hidden=!r;
+  prEl('result').textContent=r?((r.correct?'回答正确':'回答错误')+'\n正确答案：'+r.correct_answer+'\n解析：'+r.explanation):'';
+  prEl('save').hidden=!r||r.correct;
+  prEl('save').disabled=busy||!!prState.savedWrongQuestions[q.id];
+  prEl('save').textContent=prState.savedWrongQuestions[q.id]?'已加入错题集':prState.saving?'正在保存……':'加入错题集';
+  prEl('prev').disabled=busy||prState.currentIndex===0;
+  prEl('next').disabled=busy;prEl('next').textContent=prState.currentIndex===prState.items.length-1?'完成练习':'下一题';
+  prEl('similar').disabled=busy||!q.knowledge_point;
+}
+async function prLoad(course,knowledge){
+  if(prBusy()||['cpp','data-structure'].indexOf(course)<0)return;
+  prState.courseId=course;prState.knowledgePoint=knowledge||'';prState.started=true;prState.loading=true;prState.finished=false;
+  prState.items=[];prState.currentIndex=0;prState.selectedAnswers={};prState.results={};prState.savedWrongQuestions={};
+  prStatus('正在加载题目');prRender();
+  try{
+    var data=await prRequest(PR_API_RECOMMENDATIONS+'?course_id='+encodeURIComponent(course)+(knowledge?'&knowledge_point='+encodeURIComponent(knowledge):''));
+    if(!data||!Array.isArray(data.items))throw new Error('Invalid items');
+    var ids=new Set();
+    data.items.forEach(function(q){
+      if(!Number.isInteger(q.id)||ids.has(q.id)||q.course_id!==course||typeof q.question!=='string'||!Array.isArray(q.options)||q.options.length!==4||new Set(q.options.map(function(o){return o.key;})).size!==4||q.options.some(function(o){return !/^[ABCD]$/.test(o.key)||typeof o.text!=='string';}))throw new Error('Invalid exercise');
+      ids.add(q.id);
+    });
+    prState.items=data.items;
+    prStatus(data.items.length?(knowledge?(data.fallback?'当前知识点暂无专属题目，已显示后端推荐的课程练习。':'同类题巩固：'+knowledge):'请选择答案并提交。'):'当前课程暂无题目');
+  }catch(e){prStatus('无法连接后端，请确认后端已经启动');}
+  finally{prState.loading=false;prRender();}
+}
+prEl('submit').addEventListener('click',async function(){
+  var q=prQuestion();if(!q||prBusy()||prState.results[q.id])return;
+  var answer=prState.selectedAnswers[q.id];if(!answer){prStatus('请先选择一个答案');return;}
+  prState.submitting=true;prStatus('');prRender();
+  try{
+    var data=await prRequest(PR_API_SUBMIT,{exercise_id:q.id,answer:answer});
+    if(data.status!=='ok'||data.exercise_id!==q.id||typeof data.correct!=='boolean'||!/^[ABCD]$/.test(data.correct_answer)||typeof data.explanation!=='string')throw new Error('Invalid grading');
+    prState.results[q.id]=data;
+  }catch(e){prStatus('答案提交失败，请检查后端');}
+  finally{prState.submitting=false;prRender();}
+});
+prEl('save').addEventListener('click',async function(){
+  var q=prQuestion(),r=q&&prState.results[q.id];if(!r||r.correct||prBusy()||prState.savedWrongQuestions[q.id])return;
+  prState.saving=true;prStatus('');prRender();
+  try{
+    var data=await prRequest(PR_API_WRONG,{course_id:q.course_id,question:q.question,answer:'正确答案：'+r.correct_answer+'\n解析：'+r.explanation,knowledge_point:q.knowledge_point||''});
+    if(data.status!=='ok')throw new Error('Save failed');
+    prState.savedWrongQuestions[q.id]=true;prStatus('已加入错题集');
+    if(typeof mkLoadFromServer==='function')mkLoadFromServer();
+  }catch(e){prStatus('加入错题集失败，请检查后端后重试');}
+  finally{prState.saving=false;prRender();}
+});
+prEl('prev').addEventListener('click',function(){if(prBusy()||prState.currentIndex===0)return;prState.currentIndex--;prStatus('');prRender();});
+prEl('next').addEventListener('click',function(){
+  if(prBusy()||!prQuestion())return;
+  prStatus('');
+  if(prState.currentIndex<prState.items.length-1)prState.currentIndex++;
+  else{
+    var missing=prState.items.findIndex(function(q){return !prState.results[q.id];});
+    if(missing>=0){prState.currentIndex=missing;prStatus('请先完成全部题目，已返回尚未提交的题目。');}
+    else prState.finished=true;
+  }
+  prRender();
+});
+prEl('similar').addEventListener('click',function(){var q=prQuestion();if(q)prLoad(prState.courseId,q.knowledge_point);});
+prEl('reload').addEventListener('click',function(){prLoad(prState.courseId,prState.knowledgePoint);});
+prEl('retry').addEventListener('click',function(){prLoad(prState.courseId,prState.knowledgePoint);});
+prEl('review').addEventListener('click',function(){prState.finished=false;prState.currentIndex=0;prRender();});
+prEl('mistakes').addEventListener('click',function(){setView('mistakes');});
+['home','summary-home'].forEach(function(id){prEl(id).addEventListener('click',function(){setView('hero');});});
+viewPractice.querySelectorAll('[data-pr-course]').forEach(function(b){b.addEventListener('click',function(){prLoad(b.dataset.prCourse);});});
+document.getElementById('start-learn').addEventListener('click',function(e){e.preventDefault();var started=prState.started;setView('practice');if(started&&!prBusy())prLoad('cpp');});
+bindTouchFx(viewPractice);
+
 /* ================= 深链：根据 URL hash 直接打开对应页面 ================= */
 (function(){
   var MAP={hero:'hero',train:'hero',progress:'progress',charts:'charts',
-           mistakes:'mistakes',suggest:'suggest',mine:'mine',qa:'qa'};
+           mistakes:'mistakes',suggest:'suggest',mine:'mine',qa:'qa',practice:'practice'};
   function applyHash(){
     var h=String(location.hash||'').replace(/^#/,'').toLowerCase();
     if(MAP[h]) setView(MAP[h]);
