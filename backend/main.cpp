@@ -1,4 +1,5 @@
 #include <httplib.h>
+#include <winrt/base.h>
 
 #include "rag_retriever.h"
 #include "llm_client.h"
@@ -1102,6 +1103,15 @@ std::string build_recommendations_json(const std::vector<const Exercise *> &matc
 }  // namespace
 
 int main(int argc, char **argv) {
+    // Keep the MTA alive between HTTP requests so cached WinRT factories remain valid.
+    // Declared first: release the cache only after server workers and WinRT objects stop.
+    struct RuntimeLifetime {
+        RuntimeLifetime() { winrt::init_apartment(); }
+        ~RuntimeLifetime() {
+            winrt::clear_factory_cache();
+            winrt::uninit_apartment();
+        }
+    } runtime;
     const mashangzhixin::LlmClient llm(mashangzhixin::LlmConfig::load());
     if (argc == 2 && std::string(argv[1]) == "--test-api") {
         const auto result = llm.generate("cpp", "Explain a pointer in one sentence.", "A pointer stores an object's memory address.");

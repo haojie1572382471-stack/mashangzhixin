@@ -16,7 +16,18 @@ void check(bool value, const char *name) {
     if (!value) throw std::runtime_error(name);
     std::cout << "PASS: " << name << '\n';
 }
-int main() {
+int main(int argc, char** argv) {
+    // A separate process avoids masking the server's COM lifetime with this test's apartment.
+    if (argc == 2 && std::string(argv[1]) == "--mock-provider") {
+        httplib::Server provider;
+        provider.Post("/chat/completions", [](const httplib::Request&, httplib::Response& response) {
+            response.set_content(R"({"choices":[{"message":{"content":"Mock course explanation"},"finish_reason":"stop"}]})", "application/json");
+        });
+        const int port = provider.bind_to_any_port("127.0.0.1");
+        if (port < 0) return 2;
+        std::cout << port << std::endl;
+        return provider.listen_after_bind() ? 0 : 3;
+    }
     winrt::init_apartment();
     httplib::Server server;
     std::atomic<int> scenario{0};
