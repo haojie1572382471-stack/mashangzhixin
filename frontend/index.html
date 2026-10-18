@@ -2267,6 +2267,14 @@ html.theme-bamboo .stage.is-practice .navbar,html.theme-taro .stage.is-practice 
 .pr-status{min-height:26px;line-height:1.7;margin:16px 0}.pr-wrap [hidden]{display:none!important}
 .pr-stats{font-size:20px;line-height:2;white-space:pre-line;margin:24px 0}
 @media(max-width:600px){.pr-wrap{padding:110px 16px 50px}.pr-card{padding:18px}.pr-head h1{font-size:24px}.pr-actions button{flex:1}.pr-question{font-size:18px}}
+/* Server-backed learning progress */
+.lp-panel{padding:24px;margin-bottom:24px}.lp-head,.lp-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.lp-title{font-size:24px}.lp-note{font-size:14px;line-height:1.7;opacity:.8}.lp-controls button,.lp-topic button{font:inherit;color:inherit;background:rgba(110,200,220,.12);border:1px solid rgba(130,200,220,.4);border-radius:12px;padding:10px 16px;cursor:pointer}
+.lp-controls button[aria-pressed="true"]{background:rgba(80,190,220,.3);border-color:#79dce8}.lp-panel button:disabled{opacity:.5;cursor:wait}
+.lp-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.lp-metric{padding:16px;border-radius:14px;background:rgba(130,190,210,.12)}.lp-metric b{display:block;font-size:26px}.lp-metric span{font-size:14px;opacity:.8}
+.lp-topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.lp-topic{padding:18px;border:1px solid rgba(140,200,220,.22);border-radius:16px}.lp-topic.is-weak{border-color:#f4b080}.lp-topic h3{font-size:17px;margin:0 0 8px}.lp-topic p{margin:8px 0;font-size:14px}.lp-topic progress{width:100%;accent-color:#62cad2}.lp-status{padding:12px 0;min-height:36px}.lp-weak{line-height:1.8;margin:12px 0}.lp-panel [hidden]{display:none!important}
+.lp-legacy{margin-top:24px}.lp-legacy>summary{cursor:pointer;padding:16px;font-size:16px}
+@media(max-width:650px){.lp-panel{padding:18px}.lp-metrics{grid-template-columns:repeat(2,1fr)}.lp-topics{grid-template-columns:1fr}.lp-title{font-size:21px}}
 </style>
 </head>
 <body>
@@ -2387,6 +2395,14 @@ html.theme-bamboo .stage.is-practice .navbar,html.theme-taro .stage.is-practice 
     </div>
     <div class="view view-progress" id="view-progress" aria-hidden="true">
       <div class="prog-wrap">
+        <section class="card lp-panel" id="learning-progress" aria-label="真实答题进度">
+          <div class="lp-head"><h1 class="lp-title">学习进度与掌握度</h1><span id="lp-user"></span></div>
+          <div class="lp-controls"><div><button type="button" data-lp-course="cpp" aria-pressed="true">C++程序设计</button> <button type="button" data-lp-course="data-structure" aria-pressed="false">数据结构</button></div><button type="button" id="lp-refresh">刷新进度</button></div>
+          <p class="lp-note">答题记录保存在后端。正确率统计全部作答；知识点掌握度取最近20次作答正确率。低于60%待加强，至少作答3次且达到80%为已掌握，其余为学习中。</p>
+          <div class="lp-status" id="lp-status" role="status" aria-live="polite"></div>
+          <div id="lp-content" hidden><div class="lp-metrics" id="lp-metrics"></div><p class="lp-note">课程掌握度为全部知识点掌握度的平均值，未学习按0计算。</p><div class="lp-weak" id="lp-weak"></div><div class="lp-topics" id="lp-topics"></div></div>
+        </section>
+        <details class="lp-legacy"><summary>原有章节任务与签到记录（本机手动记录）</summary>
         <div class="prog-head">
           <div class="prog-head-left">
             <div class="prog-head-title">学习进度</div>
@@ -2409,6 +2425,7 @@ html.theme-bamboo .stage.is-practice .navbar,html.theme-taro .stage.is-practice 
           </aside>
           <main class="prog-content" id="prog-content"></main>
         </div>
+        </details>
       </div>
     </div>
     <div class="view view-suggest" id="view-suggest" aria-hidden="true">
@@ -3488,7 +3505,7 @@ function setView(v){
   viewMistakes.setAttribute('aria-hidden',isMk?'false':'true');
   viewQa.classList.toggle('is-open',isQa);
   viewQa.setAttribute('aria-hidden',isQa?'false':'true');
-  if(isProg) progRender();
+  if(isProg){ progRender(); lpLoad(); }
   if(isMine) renderMine();
   if(isSug){ sugRender(); dmnkStart(); }
   else{ dmnkStop(); }
@@ -3582,6 +3599,7 @@ function makeAvatar(name){
 }
 function enterUser(name){
   currentUser=name;
+  lpIdentityChanged();
   localStorage.setItem(SESS_KEY,name);
   var rec=findUser(name);
   pnameEl.textContent=name;
@@ -3594,6 +3612,7 @@ function enterUser(name){
 }
 function exitUser(){
   currentUser=null;
+  lpIdentityChanged();
   localStorage.removeItem(SESS_KEY);
   authBox.hidden=false; profileBox.hidden=true; btnLogout.hidden=true;
   renderMine();
@@ -3822,6 +3841,7 @@ function renameUser(from,to){
     if(typeof sugSave==='function') sugSave();
   }
   currentUser=to;
+  lpIdentityChanged();
   return {ok:true};
 }
 if(nameEditBtn) nameEditBtn.addEventListener('click',openNameModal);
@@ -6307,6 +6327,7 @@ function mkCloseReviewModal(){
   mkReviewState.exercise=null;
   mkReviewState.answer=null;
   mkReviewState.submitting=false;
+  mkReviewState.userId=learningUser();mkReviewState.submissionTokens={};
   mkReviewModal.classList.remove('is-open');
   mkReviewModal.setAttribute('aria-hidden','true');
 }
@@ -6333,6 +6354,7 @@ async function mkReview(id){
   mkReviewState.exercise=null;
   mkReviewState.answer=null;
   mkReviewState.submitting=false;
+  mkReviewState.userId=learningUser();mkReviewState.submissionTokens={};
   mkReviewMeta.textContent=(m.cat||'课程')+' · '+(m.path||'综合知识点');
   mkReviewContent.innerHTML='<div class="mk-review-loading">正在获取同知识点练习题…</div>';
   mkReviewResult.hidden=true;
@@ -6463,6 +6485,8 @@ mkReviewContent.addEventListener('click',function(e){
 });
 mkReviewSubmit.addEventListener('click',async function(){
   if(mkReviewState.submitting || !mkReviewState.exercise || !mkReviewState.answer) return;
+  if(mkReviewState.userId!==learningUser()){toast("用户已切换，请重新打开重练");return;}
+  var reviewToken=mkReviewState.requestToken,reviewUser=learningUser();
   mkReviewState.submitting=true;
   mkReviewSubmit.disabled=true;
   mkReviewSubmit.textContent='正在提交…';
@@ -6473,14 +6497,18 @@ mkReviewSubmit.addEventListener('click',async function(){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         exercise_id:mkReviewState.exercise.id,
-        answer:mkReviewState.answer
+        answer:mkReviewState.answer,
+        user_id:learningUser(),
+        submission_id:learningSubmission(mkReviewState,mkReviewState.exercise.id,mkReviewState.answer)
       })
     });
     var data=await resp.json();
+    if(reviewToken!==mkReviewState.requestToken||reviewUser!==learningUser())return;
     if(!resp.ok || data.status!=='ok'){
       throw new Error(data.message||('HTTP '+resp.status));
     }
 
+    lpRecorded();
     var newStatus=data.correct?'已掌握':'易错';
     var statusSaved=true;
     var statusError='';
@@ -6492,6 +6520,7 @@ mkReviewSubmit.addEventListener('click',async function(){
       console.error(err2);
     }
 
+    if(reviewToken!==mkReviewState.requestToken||reviewUser!==learningUser())return;
     var title=data.correct?'回答正确':'回答错误';
     mkReviewResult.className='mk-review-result '+(data.correct?'good':'bad');
     mkReviewResult.innerHTML='<strong>'+title+'</strong><br>'+
@@ -6507,11 +6536,13 @@ mkReviewSubmit.addEventListener('click',async function(){
     mkReviewSubmit.textContent='已提交';
     toast(data.correct?'回答正确，已标记为已掌握':'回答错误，已标记为易错');
   }catch(err){
+    if(reviewToken!==mkReviewState.requestToken||reviewUser!==learningUser())return;
     console.error(err);
     mkReviewResult.className='mk-review-result bad';
     mkReviewResult.innerHTML='<strong>提交失败</strong><br>'+mkEsc(String(err&&err.message||'请稍后重试'));
     mkReviewResult.hidden=false;
-    mkReviewState.submitting=false;
+    if(reviewToken===mkReviewState.requestToken)mkReviewState.submitting=false;
+
     mkReviewSubmit.disabled=false;
     mkReviewSubmit.textContent='重新提交';
   }
@@ -7270,12 +7301,61 @@ qaUpdateCount();
 bindDrops(viewQa);
 bindTouchFx(viewQa);
 
+/* ================= Persisted learning progress ================= */
+var lpState={courseId:'cpp',request:0};
+var prEpoch=0;
+function learningUser(){return currentUser?String(currentUser):'guest';}
+function learningToken(){return window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);}
+function learningSubmission(state,id,answer){
+  if(!state.submissionTokens)state.submissionTokens={};
+  var item=state.submissionTokens[id];if(!item||item.answer!==answer)item=state.submissionTokens[id]={answer:answer,token:learningToken()};return item.token;
+}
+function lpEl(id){return document.getElementById('lp-'+id);}
+function lpIdentityChanged(){
+  if(!lpState||!prState)return;
+  lpState.request++;lpEl('content').hidden=true;lpEl('status').textContent='';
+  prEpoch++;Object.assign(prState,{items:[],selectedAnswers:{},results:{},savedWrongQuestions:{},submissionTokens:{},currentIndex:0,loading:false,submitting:false,saving:false,finished:false,started:false,userId:learningUser()});
+  if(typeof mkReviewState!=='undefined'&&mkReviewState){mkReviewState.requestToken++;mkReviewState.exercise=null;if(typeof mkCloseReviewModal==='function')mkCloseReviewModal();}
+  if(currentView==='progress')lpLoad();
+  if(currentView==='practice')prLoad('cpp');
+}
+async function lpLoad(){
+  if(!lpState)return;
+  var user=learningUser(),course=lpState.courseId,request=++lpState.request;
+  lpEl('user').textContent=user==='guest'?'当前：访客 guest（未登录访客共用）':'当前用户：'+user;
+  lpEl('status').textContent='正在加载学习记录……';lpEl('content').hidden=true;lpEl('refresh').disabled=true;
+  document.querySelectorAll('[data-lp-course]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.lpCourse===course?'true':'false');});
+  try{
+    var data=await prRequest(MK_API_BASE+'/api/progress?user_id='+encodeURIComponent(user)+'&course_id='+encodeURIComponent(course));
+    if(request!==lpState.request||user!==learningUser())return;
+    if(data.status!=='ok'||data.user_id!==user||data.course_id!==course||!Array.isArray(data.knowledge_points))throw new Error('Invalid progress');
+    lpEl('metrics').replaceChildren();
+    [['总答题数',data.total_attempts],['答对次数',data.correct_attempts],['正确率',data.accuracy+'%'],['课程掌握度',data.mastery+'%']].forEach(function(pair){var box=document.createElement('div');box.className='lp-metric';var value=document.createElement('b');value.textContent=pair[1];var label=document.createElement('span');label.textContent=pair[0];box.append(value,label);lpEl('metrics').appendChild(box);});
+    lpEl('weak').textContent=data.weak_knowledge_points.length?'薄弱知识点：'+data.weak_knowledge_points.join('、')+'。开始练习时将优先推荐这些知识点。':'暂无待加强知识点。未学习的知识点可以从下方开始练习。';
+    lpEl('topics').replaceChildren();
+    data.knowledge_points.forEach(function(point){
+      var card=document.createElement('section');card.className='lp-topic'+(point.level==='待加强'?' is-weak':'');card.dataset.knowledgePoint=point.knowledge_point;
+      var title=document.createElement('h3');title.textContent=point.knowledge_point+' · '+point.level;
+      var info=document.createElement('p');info.textContent='作答 '+point.attempted+' 次 · 答对 '+point.correct+' 次 · 正确率 '+point.accuracy+'%';
+      var bar=document.createElement('progress');bar.max=100;bar.value=point.mastery;bar.setAttribute('aria-label',point.knowledge_point+'掌握度 '+point.mastery+'%');
+      var score=document.createElement('p');score.textContent='掌握度 '+point.mastery+'%（最近 '+point.recent_attempts+' 次）';
+      var button=document.createElement('button');button.type='button';button.textContent=point.level==='待加强'?'练习薄弱知识点':'同类题练习';button.addEventListener('click',function(){if(prBusy()){toast('请等待当前答题请求完成');return;}prState.started=true;setView('practice');prLoad(course,point.knowledge_point);});
+      card.append(title,info,bar,score,button);lpEl('topics').appendChild(card);
+    });
+    lpEl('status').textContent=data.total_attempts?'学习记录已同步。':'还没有答题记录，完成一次练习提交后即可查看真实进度。';lpEl('content').hidden=false;
+  }catch(e){if(request===lpState.request)lpEl('status').textContent='无法加载学习进度，请确认后端已启动后重试。';}
+  finally{if(request===lpState.request)lpEl('refresh').disabled=false;}
+}
+function lpRecorded(){if(currentView==='progress')lpLoad();}
+document.querySelectorAll('[data-lp-course]').forEach(function(b){b.addEventListener('click',function(){lpState.courseId=b.dataset.lpCourse;lpLoad();});});
+lpEl('refresh').addEventListener('click',lpLoad);
+window.addEventListener('storage',function(e){if(e.key===SESS_KEY){var next=localStorage.getItem(SESS_KEY);if(next!==currentUser){if(next&&findUser(next))enterUser(next);else exitUser();}}});
 /* ================= Real API chapter practice ================= */
 var PR_API_BASE=MK_API_BASE;
 var PR_API_RECOMMENDATIONS=PR_API_BASE+'/api/recommendations';
 var PR_API_SUBMIT=PR_API_BASE+'/api/exercises/submit';
 var PR_API_WRONG=PR_API_BASE+'/api/wrong-questions';
-var prState={courseId:'cpp',items:[],currentIndex:0,selectedAnswers:{},results:{},loading:false,submitting:false,saving:false,savedWrongQuestions:{},started:false,finished:false,knowledgePoint:''};
+var prState={userId:learningUser(),submissionTokens:{},courseId:'cpp',items:[],currentIndex:0,selectedAnswers:{},results:{},loading:false,submitting:false,saving:false,savedWrongQuestions:{},started:false,finished:false,knowledgePoint:''};
 function prEl(id){return document.getElementById('pr-'+id);}
 function prBusy(){return prState.loading||prState.submitting||prState.saving;}
 function prQuestion(){return prState.items[prState.currentIndex];}
@@ -7325,11 +7405,13 @@ function prRender(){
 }
 async function prLoad(course,knowledge){
   if(prBusy()||['cpp','data-structure'].indexOf(course)<0)return;
+  var epoch=prEpoch,user=learningUser();prState.userId=user;prState.submissionTokens={};
   prState.courseId=course;prState.knowledgePoint=knowledge||'';prState.started=true;prState.loading=true;prState.finished=false;
   prState.items=[];prState.currentIndex=0;prState.selectedAnswers={};prState.results={};prState.savedWrongQuestions={};
   prStatus('正在加载题目');prRender();
   try{
-    var data=await prRequest(PR_API_RECOMMENDATIONS+'?course_id='+encodeURIComponent(course)+(knowledge?'&knowledge_point='+encodeURIComponent(knowledge):''));
+    var data=await prRequest(PR_API_RECOMMENDATIONS+'?user_id='+encodeURIComponent(user)+'&course_id='+encodeURIComponent(course)+(knowledge?'&knowledge_point='+encodeURIComponent(knowledge):''));
+    if(epoch!==prEpoch||user!==learningUser())return;
     if(!data||!Array.isArray(data.items))throw new Error('Invalid items');
     var ids=new Set();
     data.items.forEach(function(q){
@@ -7338,30 +7420,33 @@ async function prLoad(course,knowledge){
     });
     prState.items=data.items;
     prStatus(data.items.length?(knowledge?(data.fallback?'当前知识点暂无专属题目，已显示后端推荐的课程练习。':'同类题巩固：'+knowledge):'请选择答案并提交。'):'当前课程暂无题目');
-  }catch(e){prStatus('无法连接后端，请确认后端已经启动');}
-  finally{prState.loading=false;prRender();}
+  }catch(e){if(epoch===prEpoch)prStatus('无法连接后端，请确认后端已经启动');}
+  finally{if(epoch===prEpoch){prState.loading=false;prRender();}}
 }
 prEl('submit').addEventListener('click',async function(){
   var q=prQuestion();if(!q||prBusy()||prState.results[q.id])return;
   var answer=prState.selectedAnswers[q.id];if(!answer){prStatus('请先选择一个答案');return;}
+  var epoch=prEpoch,user=learningUser();if(user!==prState.userId){lpIdentityChanged();return;}
   prState.submitting=true;prStatus('');prRender();
   try{
-    var data=await prRequest(PR_API_SUBMIT,{exercise_id:q.id,answer:answer});
+    var data=await prRequest(PR_API_SUBMIT,{exercise_id:q.id,answer:answer,user_id:user,submission_id:learningSubmission(prState,q.id,answer)});
+    if(epoch!==prEpoch||user!==learningUser())return;
     if(data.status!=='ok'||data.exercise_id!==q.id||typeof data.correct!=='boolean'||!/^[ABCD]$/.test(data.correct_answer)||typeof data.explanation!=='string')throw new Error('Invalid grading');
-    prState.results[q.id]=data;
-  }catch(e){prStatus('答案提交失败，请检查后端');}
-  finally{prState.submitting=false;prRender();}
+    prState.results[q.id]=data;lpRecorded();
+  }catch(e){if(epoch===prEpoch)prStatus('答案提交失败，请检查后端');}
+  finally{if(epoch===prEpoch){prState.submitting=false;prRender();}}
 });
 prEl('save').addEventListener('click',async function(){
   var q=prQuestion(),r=q&&prState.results[q.id];if(!r||r.correct||prBusy()||prState.savedWrongQuestions[q.id])return;
-  prState.saving=true;prStatus('');prRender();
+  var epoch=prEpoch;prState.saving=true;prStatus('');prRender();
   try{
     var data=await prRequest(PR_API_WRONG,{course_id:q.course_id,question:q.question,answer:'正确答案：'+r.correct_answer+'\n解析：'+r.explanation,knowledge_point:q.knowledge_point||''});
+    if(epoch!==prEpoch)return;
     if(data.status!=='ok')throw new Error('Save failed');
     prState.savedWrongQuestions[q.id]=true;prStatus('已加入错题集');
     if(typeof mkLoadFromServer==='function')mkLoadFromServer();
-  }catch(e){prStatus('加入错题集失败，请检查后端后重试');}
-  finally{prState.saving=false;prRender();}
+  }catch(e){if(epoch===prEpoch)prStatus('加入错题集失败，请检查后端后重试');}
+  finally{if(epoch===prEpoch){prState.saving=false;prRender();}}
 });
 prEl('prev').addEventListener('click',function(){if(prBusy()||prState.currentIndex===0)return;prState.currentIndex--;prStatus('');prRender();});
 prEl('next').addEventListener('click',function(){

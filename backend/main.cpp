@@ -3,6 +3,7 @@
 
 #include "rag_retriever.h"
 #include "llm_client.h"
+#include "learning_progress.h"
 
 #include <algorithm>
 #include <cctype>
@@ -1132,6 +1133,13 @@ int main(int argc, char **argv) {
         std::cerr << "Cannot serve frontend; start from the project root." << std::endl;
         return 1;
     }
+    mashangzhixin::LearningProgress learning("data/learning_attempts.json");
+    bool learning_recovered = false;
+    if (!learning.load(learning_recovered)) {
+        std::cerr << "Failed to load learning records; restore data/learning_attempts.json or its backup." << std::endl;
+        return 1;
+    }
+    if (learning_recovered) std::cerr << "Recovered learning records from backup." << std::endl;
     std::vector<WrongQuestion> wrong_questions;
     std::mutex wrong_questions_mutex;
     int next_wrong_question_id = 1;
@@ -1255,8 +1263,21 @@ int main(int argc, char **argv) {
                         "application/json; charset=utf-8");
                 });
 
+    server.Get("/api/progress", [&](const httplib::Request& request, httplib::Response& response) {
+        const auto user = request.has_param("user_id") ? request.get_param_value("user_id") : "guest";
+        const auto course = request.get_param_value("course_id");
+        if (!mashangzhixin::LearningProgress::valid_user(user) || !is_supported_course(course)) {
+            response.status = 400;
+            response.set_content(R"({"status":"error","message":"Valid user_id and course_id are required"})", "application/json; charset=utf-8");
+            return;
+        }
+        std::set<std::string> topics;
+        for (const auto& exercise : exercise_bank()) if (exercise.course_id == course) topics.insert(exercise.knowledge_point);
+        response.set_header("Cache-Control", "no-store");
+        response.set_content(learning.progress_json(user, course, topics), "application/json; charset=utf-8");
+    });
     server.Get("/api/recommendations",
-               [](const httplib::Request &request, httplib::Response &response) {
+               [&](const httplib::Request &request, httplib::Response &response) {
                    const std::string course_id =
                        request.has_param("course_id")
                            ? request.get_param_value("course_id")
@@ -1274,6 +1295,12 @@ int main(int argc, char **argv) {
                        return;
                    }
 
+                   const std::string user = request.has_param("user_id") ? request.get_param_value("user_id") : "guest";
+                   if (!mashangzhixin::LearningProgress::valid_user(user)) {
+                       response.status = 400;
+                       response.set_content(R"({"status":"error","message":"Invalid user_id"})", "application/json; charset=utf-8");
+                       return;
+                   }
                    std::vector<const Exercise *> matches;
                    for (const Exercise &exercise : exercise_bank()) {
                        if (exercise_matches(
@@ -1297,6 +1324,19 @@ int main(int argc, char **argv) {
                        knowledge_point.empty() ? 10U : 3U;
                    std::mt19937 generator{std::random_device{}()};
                    std::shuffle(matches.begin(), matches.end(), generator);
+                   // Preserve same-topic filtering; prioritize only ordinary course practice.
+                   if (knowledge_point.empty() && !course_id.empty()) {
+                       const auto progress = learning.stats(user, course_id);
+                       const auto priority = [&](const Exercise* exercise) {
+                           const auto found = progress.find(exercise->knowledge_point);
+                           return found != progress.end() && found->second.attempted && found->second.mastery() < 60
+                               ? found->second.mastery() : 101;
+                       };
+                       std::stable_sort(matches.begin(), matches.end(), [&](const Exercise* a, const Exercise* b) {
+                           return priority(a) < priority(b);
+                       });
+                   }
+                   response.set_header("Cache-Control", "no-store");
                    if (matches.size() > recommendation_limit) {
                        matches.resize(recommendation_limit);
                    }
@@ -1307,7 +1347,7 @@ int main(int argc, char **argv) {
                });
 
     server.Post("/api/exercises/submit",
-                [](const httplib::Request &request, httplib::Response &response) {
+                [&](const httplib::Request &request, httplib::Response &response) {
                     int exercise_id = 0;
                     std::string selected_answer;
 
@@ -1345,11 +1385,33 @@ int main(int argc, char **argv) {
                     }
 
                     selected_answer = normalize_answer(selected_answer);
+                    if (selected_answer.size() != 1 || std::string("ABCD").find(selected_answer) == std::string::npos) {
+                        response.status = 400;
+                        response.set_content(R"({"status":"error","message":"Answer must be A, B, C or D"})", "application/json; charset=utf-8");
+                        return;
+                    }
+                    std::string user = "guest", token;
+                    if (!mashangzhixin::LearningProgress::identity(request.body, user, token)) {
+                        response.status = 400;
+                        response.set_content(R"({"status":"error","message":"Invalid user_id or submission_id"})", "application/json; charset=utf-8");
+                        return;
+                    }
                     const bool correct = selected_answer == target->correct_answer;
+                    mashangzhixin::LearningAttempt attempt;
+                    attempt.user_id=user;attempt.course_id=target->course_id;attempt.knowledge_point=target->knowledge_point;
+                    attempt.exercise_id=target->id;attempt.selected_answer=selected_answer;attempt.correct=correct;attempt.submission_id=token;
+                    std::size_t attempt_id=0;
+                    const auto saved=learning.record(std::move(attempt),attempt_id);
+                    if(saved=="storage_error"||saved=="conflict") {
+                        response.status=saved=="conflict"?409:500;
+                        response.set_content(saved=="conflict" ? R"({"status":"error","message":"Submission token was already used for a different answer"})" : R"({"status":"error","message":"Learning record could not be saved; please retry"})", "application/json; charset=utf-8");
+                        return;
+                    }
 
                     const std::string body =
                         "{\"status\":\"ok\",\"exercise_id\":" +
                         std::to_string(target->id) +
+                        ",\"attempt_id\":" + std::to_string(attempt_id) + ",\"recorded\":true" +
                         ",\"correct\":" + (correct ? "true" : "false") +
                         ",\"correct_answer\":\"" +
                         escape_json_string(target->correct_answer) +
