@@ -4223,6 +4223,7 @@ var qaState={
   saveHint:document.getElementById('qa-save-hint'),
   link:document.getElementById('qa-link')
 };
+var qaBusy=false, qaLastCourse='cpp';
 var qaCurrent=null, qaSaveState='idle', qaLastQuestion='', qaToastT=null;
 
 function qaName(id){ return QA_NAMES[id]||id||'课程'; }
@@ -4230,20 +4231,7 @@ function qaNow(){
   var d=new Date(), p=function(n){ return n<10?'0'+n:''+n; };
   return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
 }
-function qaFormat(raw){
-  var txt=sugEsc(raw==null?'':raw);
-  txt=txt.replace(/&lt;(\/?)(code|b|strong|i|em|br|p|ul|ol|li)&gt;/gi,'<$1$2>')
-         .replace(/&lt;br\s*\/?&gt;/gi,'<br>')
-         .replace(/\r\n/g,'\n').trim();
-  if(!txt) return '<p>（后端未返回回答内容）</p>';
-  var blocks=txt.split(/\n{2,}/).map(function(p){
-    var t=p.trim();
-    if(!t) return '';
-    if(/^<(p|ul|ol|li|br)/i.test(t)) return t;
-    return '<p>'+t.replace(/\n/g,'<br>')+'</p>';
-  }).filter(Boolean);
-  return blocks.join('')||'<p>（后端未返回回答内容）</p>';
-}
+function qaFormat(raw){ return MZX_AI.format(raw); }
 function qaPlain(raw){
   // Preserve C++ templates such as vector<int> when saving a model answer.
   return String(raw==null?'':raw).trim();
@@ -4264,7 +4252,7 @@ function qaSetStatus(kind,msg){
       '<span class="qa-stacts"><button class="qa-mini" type="button" id="qa-retry">重试</button>'+
       '<button class="qa-mini ghost" type="button" id="qa-mock">用演示数据看看</button></span>';
     var r=document.getElementById('qa-retry'), m=document.getElementById('qa-mock');
-    if(r) r.addEventListener('click',function(){ qaAsk(qaLastQuestion,{silent:true}); });
+    if(r) r.addEventListener('click',function(){ qaAsk(qaLastQuestion,{silent:true,courseId:qaLastCourse}); });
     if(m) m.addEventListener('click',function(){ qaRunMock(qaLastQuestion); });
     return;
   }
@@ -4302,13 +4290,7 @@ function qaMock(courseId){
   });
 }
 async function qaFetchAnswer(courseId,question){
-  var resp=await fetch(QA_API_ASK,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({course_id:courseId,question:question})
-  });
-  if(!resp.ok) throw new Error('请求失败：HTTP '+resp.status);
-  return resp.json();
+  return MZX_AI.request(QA_API_ASK,{course_id:courseId,question:question});
 }
 async function qaPostWrong(payload){
   var resp=await fetch(QA_API_WRONG,{
@@ -4349,9 +4331,10 @@ function qaRenderAnswer(data,meta){
   if(meta.demo||data.mode==='no_evidence') qaCurrent=null;
 }
 async function qaAsk(forced,opts){
+  if(qaBusy)return;
   var options=opts||{};
   var q=String(forced!=null?forced:qaState.question.value).trim();
-  var courseId=qaState.course.value;
+  var courseId=options.courseId||qaState.course.value;
   if(!q){
     qaSetStatus('idle','问题不能为空：请先输入你的问题，再点击「提交问题」。');
     toast('请输入问题后再提交');
@@ -4362,13 +4345,16 @@ async function qaAsk(forced,opts){
   }
   if(q.length>QA_MAX){ toast('问题太长了（最多 '+QA_MAX+' 字）'); return; }
   qaLastQuestion=q;
-  if(!options.silent) qaState.question.value=q;
+  qaBusy=true;qaLastCourse=courseId;qaState.course.value=courseId;
+  qaState.course.disabled=true;qaState.question.disabled=true;
+  qaState.question.value=q;
   qaState.ask.disabled=true;
   qaState.ask.textContent='回答中…';
   qaState.answer.hidden=true;
   qaState.src.hidden=true;
   qaState.save.disabled=true;
-  qaSetStatus('loading','正在回答…（调用 '+QA_API_ASK+'）');
+  qaSetStatus('loading','正在等待回答…');
+  var stopWaiting=MZX_AI.waiting(qaState.status.querySelector('.st-text'));
   try{
     var data=await qaFetchAnswer(courseId,q);
     if(!data||(data.answer==null&&data.content==null&&data.text==null)) throw new Error('返回数据格式不正确');
@@ -4382,9 +4368,10 @@ async function qaAsk(forced,opts){
     var msg=String(err&&err.message||'');
     var reason=/Failed to fetch|NetworkError|Load failed/i.test(msg)
       ?('连接不上后端（'+QA_API_BASE+'），请确认后端已启动'):(msg||'未知错误');
-    qaSetStatus('error','回答失败：'+reason);
+    qaSetStatus('error',MZX_AI.error(err));
     toast('回答失败，可点击重试');
   }finally{
+    stopWaiting();qaBusy=false;qaState.course.disabled=false;qaState.question.disabled=false;
     qaState.ask.disabled=false;
     qaState.ask.textContent='提交问题';
   }

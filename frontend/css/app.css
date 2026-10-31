@@ -2246,3 +2246,16 @@ html.theme-bamboo .stage.is-practice .navbar,html.theme-taro .stage.is-practice 
 .lp-topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.lp-topic{padding:18px;border:1px solid rgba(140,200,220,.22);border-radius:16px}.lp-topic.is-weak{border-color:#f4b080}.lp-topic h3{font-size:17px;margin:0 0 8px}.lp-topic p{margin:8px 0;font-size:14px}.lp-topic progress{width:100%;accent-color:#62cad2}.lp-status{padding:12px 0;min-height:36px}.lp-weak{line-height:1.8;margin:12px 0}.lp-panel [hidden]{display:none!important}
 .lp-legacy{margin-top:24px}.lp-legacy>summary{cursor:pointer;padding:16px;font-size:16px}
 @media(max-width:650px){.lp-panel{padding:18px}.lp-metrics{grid-template-columns:repeat(2,1fr)}.lp-topics{grid-template-columns:1fr}.lp-title{font-size:21px}}
+
+/* Shared AI answer typography: model output is always escaped. */
+#qa-body, #pr-coach-panel { overflow-wrap:anywhere; min-width:0; }
+#pr-coach-panel { white-space:normal; }
+.ai-code { margin:16px 0; border:1px solid rgba(120,210,240,.3); border-radius:10px; overflow:hidden; background:#071525; }
+.ai-code-bar { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 12px; color:#a9dbe9; font-size:13px; }
+.ai-copy { color:#d7f6ff; background:#17364b; border:1px solid #497487; border-radius:6px; padding:5px 10px; cursor:pointer; }
+.ai-copy:focus-visible { outline:2px solid #7ce5ff; outline-offset:2px; }
+.ai-code pre { margin:0; padding:14px; overflow-x:auto; white-space:pre; max-width:100%; }
+.ai-code pre code { font:14px/1.7 Consolas,monospace; color:#e4f4fa; background:none; padding:0; }
+#qa-body p, #pr-coach-panel p { margin:10px 0; line-height:1.8; }
+#qa-body h4, #pr-coach-panel h4 { margin:18px 0 8px; }
+#qa-body p code, #pr-coach-panel p code { font-family:Consolas,monospace; padding:2px 5px; border-radius:4px; background:rgba(130,190,220,.13); }
