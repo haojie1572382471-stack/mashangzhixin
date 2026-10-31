@@ -21,10 +21,16 @@ node_modules/
 dist/
 __pycache__/
 *.pyc
-# Runtime data
-data/wrong_questions.json
-data/wrong_questions.json.tmp
 # Runtime wrong-question data
 data/wrong_questions.json
 data/wrong_questions.json.tmp
 data/wrong_questions.json.bak
+
+# Private learning attempt history
+data/learning_attempts.json
+data/learning_attempts.json.tmp
+data/learning_attempts.json.bak
+
+# Private server accounts
+data/accounts.json
+data/accounts.json.tmp
