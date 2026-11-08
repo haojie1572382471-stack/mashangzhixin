@@ -2,6 +2,8 @@
 
 面向 C++ 与数据结构学习的课程答疑、错题整理与复习助手。
 
+GitHub 仓库：https://github.com/haojie1572382471-stack/mashangzhixin
+
 ## 工作目录与课程标识
 
 本机仓库：`D:\Program Files\码上新智\mashangzhixin`。
